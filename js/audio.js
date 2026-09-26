@@ -542,48 +542,92 @@ class SoundSystem {
     osc.stop(now + 0.25);
   }
 
-  // Drowning / Death sound when touching water
+  // Cinematic Doom Gong & Death Sound when player dies
   playDeathSound() {
     if (!this.ctx || this.isMuted) return;
     const now = this.ctx.currentTime;
 
-    // 1. Dissonant low doom chord
-    const freqs = [130.81, 123.47, 92.50, 65.41]; // C3, B2, F#2, C2 (tritone dissonance)
-    freqs.forEach(f => {
+    // 1. Resonant low doom gong / church bell effect
+    const gongFreqs = [65.41, 98.00, 110.00, 130.81]; // Low C2, G2, A2, C3
+    gongFreqs.forEach(f => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = 'sawtooth';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(f, now);
-      osc.frequency.exponentialRampToValueAtTime(f * 0.5, now + 1.2);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.82, now + 2.5);
 
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
 
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start(now);
-      osc.stop(now + 1.25);
+      osc.stop(now + 2.5);
     });
 
     // 2. Heavy water plunge splash & bubbling
     this.playSplash(true);
+
+    // 3. Start rhythmic heartbeat thuds
+    this.startDeathAmbience();
+  }
+
+  startDeathAmbience() {
+    this.stopDeathAmbience();
+    this.playHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      this.playHeartbeat();
+    }, 1200);
+  }
+
+  stopDeathAmbience() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  playHeartbeat() {
+    if (!this.ctx || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    // Primary thump
+    this.triggerSubThump(now, 0.28, 75, 32, 0.16);
+    // Secondary softer recoil thump
+    this.triggerSubThump(now + 0.22, 0.16, 60, 28, 0.13);
+  }
+
+  triggerSubThump(time, vol, startFreq, endFreq, dur) {
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(startFreq, time);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + dur);
+
+    gain.gain.setValueAtTime(vol, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(time);
+    osc.stop(time + dur + 0.05);
   }
 
   // Uplifting revival / respawn sound
   playRespawnSound() {
+    this.stopDeathAmbience();
     if (!this.ctx || this.isMuted) return;
     const now = this.ctx.currentTime;
-    [261.63, 329.63, 392.00, 523.25].forEach((f, i) => {
+    [261.63, 329.63, 392.00, 523.25, 659.25].forEach((f, i) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(f, now + i * 0.08);
-      gain.gain.setValueAtTime(0.18, now + i * 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.4);
+      osc.frequency.setValueAtTime(f, now + i * 0.07);
+      gain.gain.setValueAtTime(0.18, now + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.07 + 0.45);
       osc.connect(gain);
       gain.connect(this.masterGain);
-      osc.start(now + i * 0.08);
-      osc.stop(now + i * 0.08 + 0.45);
+      osc.start(now + i * 0.07);
+      osc.stop(now + i * 0.07 + 0.5);
     });
   }
 }

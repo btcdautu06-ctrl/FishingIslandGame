@@ -23,6 +23,12 @@ class Game {
       }
     });
 
+    // Session Stats for Expedition & Death Screen
+    this.sessionStartTime = Date.now();
+    this.sessionFishCaught = 0;
+    this.sessionTreesShaken = 0;
+    this.deathParticlesActive = false;
+
     this.initThree();
     this.initSystems();
     this.initCatch3DViewer();
@@ -325,7 +331,7 @@ class Game {
       this.advanceTimeOfDay();
     });
 
-    // Respawn button on death screen (Immediately interactive!)
+    // Respawn buttons on death screen
     const respawnBtn = document.getElementById('btn-respawn');
     if (respawnBtn) {
       respawnBtn.addEventListener('click', (e) => {
@@ -333,31 +339,97 @@ class Game {
           e.preventDefault();
           e.stopPropagation();
         }
-        this.respawnPlayer();
+        this.respawnPlayer('trail');
+      });
+    }
+
+    const respawnCampfireBtn = document.getElementById('btn-respawn-campfire');
+    if (respawnCampfireBtn) {
+      respawnCampfireBtn.addEventListener('click', (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.respawnPlayer('campfire');
       });
     }
   }
 
-  // --- DEATH & RESPAWN HANDLERS ---
+  // --- CINEMATIC AAA DEATH & RESPAWN HANDLERS ---
   onPlayerDied(reason) {
     // 1. Cancel any active fishing line
     if (this.fishing) {
       this.fishing.cancelFishing();
     }
 
-    // 2. Show death overlay
+    // 2. Query death overlay elements
     const overlay = document.getElementById('death-overlay');
     const desc = document.getElementById('death-desc');
-    const btn = document.getElementById('btn-respawn');
-    if (desc) desc.innerText = reason || 'You touched the deadly water!';
+    const reasonIcon = document.getElementById('death-reason-icon');
+    const emblemIcon = document.getElementById('death-emblem-icon');
+    const timerSub = document.getElementById('respawn-timer-sub');
+    const progressBar = document.getElementById('death-progress-bar');
+
+    // Contextual death reason, icons, and styling
+    const cleanReason = reason || 'You were consumed by the ocean waters!';
+    const lower = cleanReason.toLowerCase();
+
+    if (lower.includes('volcano') || lower.includes('sulfur')) {
+      if (reasonIcon) reasonIcon.innerText = '🌋';
+      if (emblemIcon) emblemIcon.innerText = '🔥';
+    } else if (lower.includes('coral') || lower.includes('lagoon')) {
+      if (reasonIcon) reasonIcon.innerText = '🪸';
+      if (emblemIcon) emblemIcon.innerText = '🦈';
+    } else {
+      if (reasonIcon) reasonIcon.innerText = '🌊';
+      if (emblemIcon) emblemIcon.innerText = '☠️';
+    }
+
+    if (desc) desc.innerText = cleanReason;
+
+    // 3. Populate Expedition Run Stats
+    const elapsedSec = Math.floor((Date.now() - (this.sessionStartTime || Date.now())) / 1000);
+    const m = Math.floor(elapsedSec / 60).toString().padStart(2, '0');
+    const s = (elapsedSec % 60).toString().padStart(2, '0');
+
+    const statTime = document.getElementById('death-stat-time');
+    const statFish = document.getElementById('death-stat-fish');
+    const statGold = document.getElementById('death-stat-gold');
+    const statTrees = document.getElementById('death-stat-trees');
+
+    if (statTime) statTime.innerText = `${m}:${s}`;
+    if (statFish) statFish.innerText = `${this.sessionFishCaught || 0} Caught`;
+    if (statGold) statGold.innerText = `${this.gold} G`;
+    if (statTrees) statTrees.innerText = `${this.sessionTreesShaken || 0} Trees`;
+
+    // 4. Rotating Angler Wisdom / Survival Advice
+    const tips = [
+      "The ocean waters are lethal! Always cast your line safely elevated on docks or bridges.",
+      "Watch your footing near the steep ocean cliffs and slippery coral trenches.",
+      "Rare apex predators pull harder—upgrade your rod tension cap at Captain Barnaby's!",
+      "Resting at the Haven Campfire lets you cycle through Dawn, Day, Sunset, and Night.",
+      "Shake trees across the islands to forage fruit, grubs, and hidden gold coins!",
+      "Bait selection matters! Firefly Shrimp and Squid attract deep-sea monsters at night.",
+      "Use the Archipelago Map [M] to track Captain Barnaby and travel between islands!"
+    ];
+    const tipElem = document.getElementById('death-tip-text');
+    if (tipElem) {
+      tipElem.innerText = tips[Math.floor(Math.random() * tips.length)];
+    }
+
+    // 5. Show cinematic overlay
     if (overlay) overlay.classList.remove('hidden');
 
-    // 3. Immediately clickable Respawn button with auto-timer countdown
-    let timeLeft = 3;
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = `⚡ Respawn Now <span style="opacity: 0.82; font-size: 13px; font-weight: 500;">(or wait ${timeLeft}s)</span>`;
-    }
+    // 6. Start floating ember particles on canvas
+    this.startDeathParticles();
+
+    // 7. Auto-respawn countdown (4s) with animated progress bar
+    const totalTimeMs = 4500;
+    let elapsedMs = 0;
+    const stepMs = 50;
+
+    if (progressBar) progressBar.style.width = '100%';
+    if (timerSub) timerSub.innerText = '(4s)';
 
     if (this.deathInterval) {
       clearInterval(this.deathInterval);
@@ -365,50 +437,100 @@ class Game {
     }
 
     this.deathInterval = setInterval(() => {
-      timeLeft--;
-      if (timeLeft > 0) {
-        if (btn) {
-          btn.innerHTML = `⚡ Respawn Now <span style="opacity: 0.82; font-size: 13px; font-weight: 500;">(or wait ${timeLeft}s)</span>`;
-        }
-      } else {
+      elapsedMs += stepMs;
+      const progressRatio = Math.max(0, 1 - (elapsedMs / totalTimeMs));
+      if (progressBar) progressBar.style.width = `${progressRatio * 100}%`;
+
+      const remainingSec = Math.ceil((totalTimeMs - elapsedMs) / 1000);
+      if (timerSub) timerSub.innerText = `(${remainingSec}s)`;
+
+      if (elapsedMs >= totalTimeMs) {
         if (this.deathInterval) {
           clearInterval(this.deathInterval);
           this.deathInterval = null;
         }
         if (this.player && this.player.isDead) {
-          this.respawnPlayer();
+          this.respawnPlayer('trail');
         }
       }
-    }, 1000);
+    }, stepMs);
   }
 
-  respawnPlayer() {
+  startDeathParticles() {
+    const canvas = document.getElementById('death-particles-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    this.deathParticlesActive = true;
+    const particles = [];
+    for (let i = 0; i < 35; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 1.2 + Math.random() * 2.8,
+        speedY: 0.35 + Math.random() * 0.9,
+        speedX: (Math.random() - 0.5) * 0.6,
+        alpha: 0.2 + Math.random() * 0.65,
+        hue: Math.random() < 0.65 ? 0 : 38 // Crimson or Amber
+      });
+    }
+
+    const render = () => {
+      if (!this.deathParticlesActive) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.y -= p.speedY;
+        p.x += p.speedX;
+        if (p.y < -10) {
+          p.y = canvas.height + 10;
+          p.x = Math.random() * canvas.width;
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 85%, 60%, ${p.alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(render);
+    };
+    render();
+  }
+
+  stopDeathParticles() {
+    this.deathParticlesActive = false;
+  }
+
+  respawnPlayer(spawnType = 'trail') {
     if (this.deathInterval) {
       clearInterval(this.deathInterval);
       this.deathInterval = null;
     }
+    this.stopDeathParticles();
+
     const overlay = document.getElementById('death-overlay');
     if (overlay) overlay.classList.add('hidden');
-
-    const btn = document.getElementById('btn-respawn');
-    if (btn) {
-      btn.innerHTML = '⚡ Respawn Now';
-      btn.disabled = false;
-    }
 
     if (this.player) {
-      this.player.respawn();
+      this.player.respawn(spawnType);
     }
   }
 
-  onPlayerRespawn() {
+  onPlayerRespawn(spawnType = 'trail') {
     if (this.deathInterval) {
       clearInterval(this.deathInterval);
       this.deathInterval = null;
     }
+    this.stopDeathParticles();
+
     const overlay = document.getElementById('death-overlay');
     if (overlay) overlay.classList.add('hidden');
-    this.showToast('You respawned safely on the coastal trail!', 'success');
+
+    if (spawnType === 'campfire') {
+      this.showToast('🔥 Awoke safely by the warm Haven Campfire!', 'success');
+    } else {
+      this.showToast('🌿 Respawned safely on the coastal trail!', 'success');
+    }
   }
 
   handleInteractKey() {
@@ -452,6 +574,7 @@ class Game {
       return;
     }
     tree.lastShaken = now;
+    this.sessionTreesShaken = (this.sessionTreesShaken || 0) + 1;
 
     // Visual tree shake oscillation
     window.soundSystem.playTreeShake();
@@ -964,6 +1087,7 @@ class Game {
   showCatchModal(data) {
     const modal = document.getElementById('catch-modal');
     const f = data.fish;
+    this.sessionFishCaught = (this.sessionFishCaught || 0) + 1;
 
     document.getElementById('catch-name').innerText = f.name;
     document.getElementById('catch-scientific').innerText = f.scientific;

@@ -1322,20 +1322,29 @@ class Player {
     if (window.game) window.game.onPlayerDied(reason);
   }
 
-  respawn() {
+  respawn(spawnType = 'trail') {
     this.isDead = false;
     this.deathTimer = 0;
     this.deathReason = '';
     this.keys = { forward: false, backward: false, left: false, right: false, sprint: false, jump: false };
+    if (this.joystick) {
+      this.joystick.x = 0;
+      this.joystick.z = 0;
+      this.joystick.active = false;
+    }
     this.isMoving = false;
     this.walkCycle = 0;
 
-    // Safe spawn location on coastal meadow path near start
-    const spawnX = 0;
-    const spawnZ = 72;
-    const groundY = this.island ? this.island.getHeight(spawnX, spawnZ) : 2.0;
+    let spawnX = 0;
+    let spawnZ = 72;
+    if (spawnType === 'campfire') {
+      spawnX = 4;
+      spawnZ = 33; // Near Haven Campfire (warm sanctuary)
+    }
+
+    const groundY = this.island ? this.island.getHeight(spawnX, spawnZ) : 2.5;
     this.position.set(spawnX, Math.max(groundY, 2.0), spawnZ);
-    this.rotation = Math.PI; // Face forward into the island
+    this.rotation = (spawnType === 'campfire') ? 0 : Math.PI;
     this.mesh.rotation.set(0, this.rotation, 0);
     this.mesh.position.copy(this.position);
 
@@ -1353,14 +1362,14 @@ class Player {
 
     // Reset camera orientation
     this.camPitch = 0.30;
-    this.camYaw = 0;
+    this.camYaw = (spawnType === 'campfire') ? Math.PI : 0;
     this.updateCamera();
 
     if (window.soundSystem && window.soundSystem.playRespawnSound) {
       window.soundSystem.playRespawnSound();
     }
     if (window.game && window.game.onPlayerRespawn) {
-      window.game.onPlayerRespawn();
+      window.game.onPlayerRespawn(spawnType);
     }
   }
 

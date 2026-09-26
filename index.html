@@ -338,14 +338,76 @@
     </div>
   </div>
 
-  <!-- DEATH OVERLAY (TOUCH WATER -> YOU DIE) -->
+  <!-- CINEMATIC AAA DEATH OVERLAY -->
   <div id="death-overlay" class="death-screen hidden">
+    <!-- Cinematic Film Letterbox Bars -->
+    <div class="death-letterbox-top"></div>
+    <div class="death-letterbox-bottom"></div>
+
+    <!-- Abyssal Crimson Vignette & Floating Ambient Particles -->
+    <div class="death-vignette"></div>
+    <canvas id="death-particles-canvas" class="death-particles"></canvas>
+
+    <!-- Central Cinematic Death Card -->
     <div class="death-box">
-      <div class="death-icon">☠️</div>
-      <h1 class="death-title">YOU DIED!</h1>
-      <p id="death-desc" class="death-desc">You touched the deadly water!</p>
-      <div class="death-warning">⚠️ The ocean waters are lethal! Stay safely elevated on land, docks, or the wooden suspension bridges.</div>
-      <button id="btn-respawn" class="btn btn-gold btn-respawn">⚡ Respawn Now</button>
+      <!-- Pulsing Emblem -->
+      <div class="death-emblem-wrap">
+        <div class="death-pulse-ring"></div>
+        <div id="death-emblem-icon" class="death-icon">☠️</div>
+      </div>
+
+      <div class="death-title-wrap">
+        <h1 class="death-title">YOU DIED</h1>
+      </div>
+
+      <div class="death-reason-pill">
+        <span id="death-reason-icon" class="death-reason-icon">🌊</span>
+        <span id="death-desc" class="death-desc">You were consumed by the abyssal ocean!</span>
+      </div>
+
+      <!-- Expedition Run Stats -->
+      <div class="death-stats-card">
+        <div class="death-stat-item">
+          <div class="death-stat-label">⏱️ Survived</div>
+          <div id="death-stat-time" class="death-stat-val">00:00</div>
+        </div>
+        <div class="death-stat-item">
+          <div class="death-stat-label">🐟 Creel Tally</div>
+          <div id="death-stat-fish" class="death-stat-val">0 Caught</div>
+        </div>
+        <div class="death-stat-item">
+          <div class="death-stat-label">🪙 Gold Kept</div>
+          <div id="death-stat-gold" class="death-stat-val">50 G</div>
+        </div>
+        <div class="death-stat-item">
+          <div class="death-stat-label">🌲 Foraged</div>
+          <div id="death-stat-trees" class="death-stat-val">0 Trees</div>
+        </div>
+      </div>
+
+      <!-- Angler Wisdom / Survival Advice -->
+      <div class="death-tip-container">
+        <span class="death-tip-bulb">💡</span>
+        <span id="death-tip-text" class="death-tip-text">The ocean waters are lethal! Always cast your line safely from docks, sand dunes, or bridges.</span>
+      </div>
+
+      <!-- Dual Respawn Actions -->
+      <div class="death-actions-row">
+        <button id="btn-respawn" class="btn btn-gold btn-respawn" title="Respawn immediately on the coastal trail [Space]">
+          <span>⚡</span>
+          <span>Respawn on Trail</span>
+          <span id="respawn-timer-sub" class="respawn-timer-sub">(4s)</span>
+        </button>
+        <button id="btn-respawn-campfire" class="btn btn-respawn-campfire" title="Wake up safely by the Haven Campfire">
+          <span>⛺</span>
+          <span>Haven Campfire</span>
+        </button>
+      </div>
+
+      <!-- Countdown Progress Track -->
+      <div class="death-progress-track">
+        <div id="death-progress-bar" class="death-progress-bar"></div>
+      </div>
     </div>
   </div>
 

@@ -743,112 +743,310 @@ body, html {
 .toast-info { border-color: #0984e3; color: #dff9fb; }
 .toast.fade-out { opacity: 0; transform: translateY(-10px); }
 
-/* --- DEATH SCREEN (TOUCH WATER -> YOU DIE) --- */
+/* --- CINEMATIC AAA DEATH SCREEN --- */
 .death-screen {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(160, 0, 0, 0.88) 0%, rgba(15, 0, 0, 0.98) 100%);
-  backdrop-filter: blur(10px);
-  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: deathFadeIn 0.4s ease-out, deathPulse 2s infinite alternate ease-in-out;
+  overflow: hidden;
+  user-select: none;
+  animation: deathFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes deathFadeIn {
-  from { opacity: 0; transform: scale(1.08); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; filter: blur(10px); }
+  to { opacity: 1; filter: blur(0px); }
 }
 
-@keyframes deathPulse {
-  from { background: radial-gradient(circle, rgba(160, 0, 0, 0.85) 0%, rgba(15, 0, 0, 0.98) 100%); }
-  to { background: radial-gradient(circle, rgba(200, 10, 10, 0.92) 0%, rgba(20, 0, 0, 0.99) 100%); }
+/* Film Letterbox Bars */
+.death-letterbox-top, .death-letterbox-bottom {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 9vh;
+  background: #000000;
+  z-index: 10001;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+  transition: transform 0.6s ease-out;
+}
+.death-letterbox-top { top: 0; transform: translateY(-100%); animation: slideLetterboxDown 0.6s 0.05s ease-out forwards; }
+.death-letterbox-bottom { bottom: 0; transform: translateY(100%); animation: slideLetterboxUp 0.6s 0.05s ease-out forwards; }
+
+@keyframes slideLetterboxDown { to { transform: translateY(0); } }
+@keyframes slideLetterboxUp { to { transform: translateY(0); } }
+
+/* Abyssal Crimson Vignette */
+.death-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(30, 4, 4, 0.5) 0%, rgba(18, 2, 2, 0.9) 60%, rgba(0, 0, 0, 0.98) 100%);
+  z-index: 10000;
+  pointer-events: none;
+  animation: deathVignettePulse 3s infinite alternate ease-in-out;
 }
 
+@keyframes deathVignettePulse {
+  0% { opacity: 0.85; filter: contrast(100%); }
+  100% { opacity: 1; filter: contrast(125%); }
+}
+
+.death-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+/* Central Cinematic Death Box */
 .death-box {
-  background: rgba(20, 8, 8, 0.95);
-  border: 3px solid #ff3838;
-  border-radius: 28px;
-  padding: 36px 48px;
-  max-width: 520px;
+  position: relative;
+  z-index: 10002;
+  background: radial-gradient(circle at 50% 0%, rgba(45, 12, 12, 0.95) 0%, rgba(12, 6, 6, 0.98) 100%);
+  border: 1px solid rgba(255, 77, 77, 0.4);
+  box-shadow: 0 0 70px rgba(255, 20, 20, 0.35), 0 25px 60px rgba(0, 0, 0, 0.85);
+  border-radius: 26px;
+  padding: 30px 40px;
+  max-width: 580px;
   width: 90%;
   text-align: center;
-  box-shadow: 0 0 50px rgba(255, 56, 56, 0.7);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: deathBoxRise 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes deathBoxRise {
+  from { transform: translateY(35px) scale(0.93); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Pulsing Emblem */
+.death-emblem-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.death-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 77, 77, 0.6);
+  animation: deathRingExpand 2s infinite ease-out;
+}
+
+@keyframes deathRingExpand {
+  0% { transform: scale(0.75); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
 .death-icon {
-  font-size: 54px;
-  filter: drop-shadow(0 0 16px rgba(255, 56, 56, 0.9));
-  animation: deathBounce 1s infinite alternate ease-in-out;
+  font-size: 44px;
+  filter: drop-shadow(0 0 16px rgba(255, 50, 50, 0.9));
+  animation: deathIconFloat 2.5s infinite ease-in-out;
 }
 
-@keyframes deathBounce {
-  from { transform: translateY(0) scale(1); }
-  to { transform: translateY(-8px) scale(1.1); }
+@keyframes deathIconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.death-title-wrap {
+  position: relative;
+  margin-top: -4px;
 }
 
 .death-title {
-  font-size: 38px;
+  font-family: 'Cinzel', 'Times New Roman', Georgia, serif;
+  font-size: 42px;
   font-weight: 900;
-  color: #ff4d4d;
-  letter-spacing: 2px;
+  color: #ff3838;
+  letter-spacing: 12px;
   text-transform: uppercase;
-  text-shadow: 0 0 20px rgba(255, 77, 77, 0.8);
+  margin: 0;
+  padding-left: 12px;
+  text-shadow: 0 0 25px rgba(255, 30, 30, 0.9), 0 0 50px rgba(180, 0, 0, 0.6);
+  animation: titleGlowPulse 2s infinite alternate ease-in-out;
 }
 
-.death-desc {
-  font-size: 16px;
-  color: #ffcccc;
-  line-height: 1.5;
+@keyframes titleGlowPulse {
+  from { text-shadow: 0 0 20px rgba(255, 50, 50, 0.8), 0 0 40px rgba(180, 0, 0, 0.5); }
+  to { text-shadow: 0 0 35px rgba(255, 80, 80, 1), 0 0 70px rgba(255, 20, 20, 0.8); }
+}
+
+.death-reason-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 50, 50, 0.12);
+  border: 1px solid rgba(255, 77, 77, 0.35);
+  padding: 7px 18px;
+  border-radius: 20px;
+  color: #ffb8b8;
+  font-size: 14px;
   font-weight: 600;
 }
 
-.death-warning {
-  font-size: 13px;
-  color: #f5cd79;
-  background: rgba(245, 205, 121, 0.12);
-  border: 1px solid rgba(245, 205, 121, 0.35);
+.death-reason-icon {
+  font-size: 16px;
+}
+
+/* Stats Card */
+.death-stats-card {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.death-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+}
+
+.death-stat-label {
+  font-size: 10.5px;
+  color: #a4b0be;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.death-stat-val {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #ffeaa7;
+}
+
+/* Survival Advice */
+.death-tip-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(245, 205, 121, 0.08);
+  border: 1px dashed rgba(245, 205, 121, 0.32);
   border-radius: 12px;
-  padding: 10px 16px;
+  padding: 9px 14px;
+  width: 100%;
+  font-size: 12.5px;
+  color: #f7d794;
   line-height: 1.4;
+  text-align: left;
+}
+
+.death-tip-bulb {
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+/* Dual Respawn Actions Row */
+.death-actions-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
 }
 
 .btn-respawn {
-  padding: 16px 42px;
-  font-size: 17px;
+  flex: 1.25;
+  padding: 13px 18px;
+  font-size: 15px;
   font-weight: 800;
-  border-radius: 30px;
-  margin-top: 10px;
+  border-radius: 14px;
   cursor: pointer;
   background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
   color: #1a1a1a;
   border: 2px solid #fff;
-  box-shadow: 0 6px 25px rgba(253, 160, 133, 0.6), 0 0 15px rgba(246, 211, 101, 0.5);
+  box-shadow: 0 4px 18px rgba(253, 160, 133, 0.6), 0 0 15px rgba(246, 211, 101, 0.5);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  user-select: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  user-select: none;
 }
 
 .btn-respawn:hover {
-  transform: translateY(-3px) scale(1.04);
-  box-shadow: 0 10px 30px rgba(253, 160, 133, 0.8), 0 0 25px rgba(246, 211, 101, 0.8);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(253, 160, 133, 0.8);
   filter: brightness(1.08);
 }
 
 .btn-respawn:active {
   transform: translateY(1px) scale(0.97);
-  box-shadow: 0 3px 12px rgba(253, 160, 133, 0.5);
+}
+
+.respawn-timer-sub {
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+.btn-respawn-campfire {
+  flex: 0.95;
+  padding: 13px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 14px;
+  cursor: pointer;
+  background: rgba(255, 121, 63, 0.18);
+  border: 1px solid rgba(255, 121, 63, 0.5);
+  color: #ff9f43;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.btn-respawn-campfire:hover {
+  background: rgba(255, 121, 63, 0.32);
+  border-color: #ff793f;
+  transform: translateY(-2px);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(255, 121, 63, 0.4);
+}
+
+.btn-respawn-campfire:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* Progress track */
+.death-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.death-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff4757, #ffa502);
+  transition: width 0.1s linear;
 }
 
 /* --- BAIT MARKET & BULK BUY STYLES --- */
