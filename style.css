@@ -220,6 +220,37 @@ body, html {
   opacity: 0.85;
 }
 
+/* Big Cast Button Dynamic States */
+.big-cast-button.is-charging {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  box-shadow: 0 0 25px rgba(243, 156, 18, 0.8);
+  border-color: #ffeaa7;
+}
+
+.big-cast-button.is-waiting {
+  background: linear-gradient(135deg, #0984e3, #00cec9);
+  box-shadow: 0 6px 20px rgba(9, 132, 227, 0.5);
+}
+
+.big-cast-button.is-strike {
+  background: linear-gradient(135deg, #d63031, #e84118);
+  box-shadow: 0 0 35px rgba(214, 48, 49, 1), 0 0 15px #ffeaa7;
+  border-color: #fff;
+  animation: strikeBlink 0.28s infinite alternate;
+}
+
+.big-cast-button.is-reeling {
+  background: linear-gradient(135deg, #00b894, #2ecc71);
+  box-shadow: 0 0 30px rgba(46, 204, 113, 0.85);
+  border-color: #2ecc71;
+}
+
+.big-cast-button.is-reeling.holding {
+  transform: scale(0.95);
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  box-shadow: 0 0 35px rgba(46, 204, 113, 1);
+}
+
 /* --- INTERACTION PROMPT --- */
 #interaction-prompt {
   position: absolute;
@@ -1662,6 +1693,87 @@ body, html {
   background: rgba(255, 234, 167, 0.85);
   color: #111;
   border-color: #ffeaa7;
+}
+
+/* Dedicated Mobile Touch Fishing Action Button */
+.touch-action-btn-fish {
+  width: 78px;
+  height: 78px;
+  background: linear-gradient(135deg, #00b894 0%, #0984e3 100%);
+  border: 3px solid #ffeaa7;
+  box-shadow: 0 6px 24px rgba(0, 184, 148, 0.65), 0 0 16px rgba(241, 196, 15, 0.45);
+  position: relative;
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+.touch-action-btn-fish .touch-fish-icon {
+  font-size: 32px;
+  line-height: 1;
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.touch-action-btn-fish .touch-fish-text {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+  color: #fff;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Charging State */
+.touch-action-btn-fish.is-charging {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  border-color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 0 25px rgba(243, 156, 18, 0.9);
+}
+
+/* Waiting in Water */
+.touch-action-btn-fish.is-waiting {
+  background: linear-gradient(135deg, #0984e3 0%, #00cec9 100%);
+  border-color: #81ecec;
+}
+
+/* Strike Alert - Big pulsing red button */
+.touch-action-btn-fish.is-strike {
+  background: linear-gradient(135deg, #d63031 0%, #e84118 100%);
+  border-color: #ffffff;
+  transform: scale(1.18);
+  box-shadow: 0 0 35px rgba(214, 48, 49, 1), 0 0 20px #ffeaa7;
+  animation: strikeBlink 0.25s infinite alternate;
+}
+
+/* Reeling Minigame - Neon Green */
+.touch-action-btn-fish.is-reeling {
+  background: linear-gradient(135deg, #00b894 0%, #2ecc71 100%);
+  border-color: #2ecc71;
+  box-shadow: 0 0 28px rgba(46, 204, 113, 0.85);
+}
+
+.touch-action-btn-fish.is-reeling.holding {
+  transform: scale(0.93);
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  box-shadow: 0 0 35px rgba(46, 204, 113, 1);
+}
+
+/* Aura pulse ring */
+.touch-fish-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid #ffeaa7;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.touch-action-btn-fish.is-strike .touch-fish-pulse-ring {
+  opacity: 1;
+  animation: auraPulse 0.55s infinite ease-out;
 }
 
 /* ==========================================================================

@@ -223,29 +223,61 @@ class Game {
       }
     }, 1200);
 
-    // 2. Cast button hold / release
+    // 2. Unified Fishing Touch & Click Controller (Works for Cast, Strike, and Reel)
+    const touchFishBtn = document.getElementById('btn-touch-fish');
     const castBtn = document.getElementById('btn-cast');
-    const chargeBarFill = document.getElementById('cast-bar-fill');
 
-    const handleCastStart = (e) => {
-      if (e) e.preventDefault();
-      window.soundSystem.resume();
-      if (this.fishing.state === 'idle') {
+    const handleFishingDown = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (window.soundSystem) window.soundSystem.resume();
+
+      const fState = this.fishing.state;
+      if (fState === 'idle') {
         this.fishing.startChargingCast();
+      } else if (fState === 'hook_alert') {
+        this.fishing.attemptHook();
+      } else if (fState === 'reeling') {
+        this.fishing.setReelHolding(true);
+        if (touchFishBtn) touchFishBtn.classList.add('holding');
+        if (castBtn) castBtn.classList.add('holding');
+      } else if (fState === 'waiting_bite' || fState === 'nibbling') {
+        this.fishing.cancelFishing('Line retrieved.');
       }
     };
 
-    const handleCastEnd = (e) => {
-      if (e) e.preventDefault();
-      if (this.fishing.state === 'charging') {
+    const handleFishingUp = (e) => {
+      const fState = this.fishing.state;
+      if (fState === 'charging') {
         this.fishing.releaseCast();
+      } else if (fState === 'reeling') {
+        this.fishing.setReelHolding(false);
+        if (touchFishBtn) touchFishBtn.classList.remove('holding');
+        if (castBtn) castBtn.classList.remove('holding');
       }
     };
 
-    castBtn.addEventListener('mousedown', handleCastStart);
-    castBtn.addEventListener('touchstart', handleCastStart, { passive: false });
-    window.addEventListener('mouseup', handleCastEnd);
-    window.addEventListener('touchend', handleCastEnd);
+    if (touchFishBtn) {
+      touchFishBtn.addEventListener('touchstart', handleFishingDown, { passive: false });
+      touchFishBtn.addEventListener('mousedown', handleFishingDown);
+      touchFishBtn.addEventListener('touchend', handleFishingUp, { passive: false });
+      touchFishBtn.addEventListener('touchcancel', handleFishingUp);
+      touchFishBtn.addEventListener('mouseup', handleFishingUp);
+    }
+
+    if (castBtn) {
+      castBtn.addEventListener('touchstart', handleFishingDown, { passive: false });
+      castBtn.addEventListener('mousedown', handleFishingDown);
+      castBtn.addEventListener('touchend', handleFishingUp, { passive: false });
+      castBtn.addEventListener('touchcancel', handleFishingUp);
+      castBtn.addEventListener('mouseup', handleFishingUp);
+    }
+
+    window.addEventListener('mouseup', handleFishingUp);
+    window.addEventListener('touchend', handleFishingUp);
+    window.addEventListener('touchcancel', handleFishingUp);
 
     // 3. Keyboard Input: Space (Jump & Strike/Reel), KeyC (Cast), KeyE (Interact)
     window.addEventListener('keydown', (e) => {
@@ -431,6 +463,71 @@ class Game {
         touchControls.style.display = 'none';
       }
       if (hudModeToggle) hudModeToggle.innerHTML = '🎮 Mode: PC';
+    }
+  }
+
+  // Synchronize mobile and desktop fishing buttons with the current fishing phase
+  updateFishingUI() {
+    const touchFishBtn = document.getElementById('btn-touch-fish');
+    const touchFishIcon = document.getElementById('touch-fish-icon');
+    const touchFishText = document.getElementById('touch-fish-text');
+    const castBtn = document.getElementById('btn-cast');
+    if (!touchFishBtn && !castBtn) return;
+
+    const state = this.fishing ? this.fishing.state : 'idle';
+    if (this._lastFishingUIState === state && state !== 'charging') return;
+    this._lastFishingUIState = state;
+
+    if (touchFishBtn) {
+      touchFishBtn.classList.remove('is-charging', 'is-waiting', 'is-strike', 'is-reeling');
+    }
+    if (castBtn) {
+      castBtn.classList.remove('is-charging', 'is-waiting', 'is-strike', 'is-reeling');
+    }
+
+    if (state === 'idle') {
+      if (touchFishIcon) touchFishIcon.innerText = '🎣';
+      if (touchFishText) touchFishText.innerText = 'Cast';
+      if (castBtn) castBtn.innerHTML = '🎣 CAST ROD<span>(Hold to charge power)</span>';
+    } else if (state === 'charging') {
+      if (touchFishBtn) touchFishBtn.classList.add('is-charging');
+      if (touchFishIcon) touchFishIcon.innerText = '⚡';
+      if (touchFishText) touchFishText.innerText = 'Release!';
+      if (castBtn) {
+        castBtn.classList.add('is-charging');
+        castBtn.innerHTML = `⚡ RELEASE CAST!<span>(Power: ${Math.round(this.fishing.castPower)}%)</span>`;
+      }
+    } else if (state === 'cast_in_flight') {
+      if (touchFishIcon) touchFishIcon.innerText = '🪂';
+      if (touchFishText) touchFishText.innerText = 'Flying...';
+      if (castBtn) castBtn.innerHTML = '🪂 CASTING LINE...<span>(In flight)</span>';
+    } else if (state === 'waiting_bite' || state === 'nibbling') {
+      if (touchFishBtn) touchFishBtn.classList.add('is-waiting');
+      const isNibble = (state === 'nibbling');
+      if (touchFishIcon) touchFishIcon.innerText = isNibble ? '🐟' : '🌊';
+      if (touchFishText) touchFishText.innerText = isNibble ? 'Bite!' : 'Wait';
+      if (castBtn) {
+        castBtn.classList.add('is-waiting');
+        castBtn.innerHTML = isNibble ?
+          '🐟 NIBBLE DETECTED!<span>(Get ready to strike!)</span>' :
+          '🌊 WAITING FOR BITE...<span>(Tap to retrieve line)</span>';
+      }
+    } else if (state === 'hook_alert') {
+      if (touchFishBtn) touchFishBtn.classList.add('is-strike');
+      if (touchFishIcon) touchFishIcon.innerText = '💥';
+      if (touchFishText) touchFishText.innerText = 'STRIKE!';
+      if (castBtn) {
+        castBtn.classList.add('is-strike');
+        castBtn.innerHTML = '💥 STRIKE BITE NOW! 💥<span>(TAP TO HOOK FISH!)</span>';
+      }
+    } else if (state === 'reeling') {
+      if (touchFishBtn) touchFishBtn.classList.add('is-reeling');
+      if (touchFishIcon) touchFishIcon.innerText = '🔄';
+      if (touchFishText) touchFishText.innerText = 'REEL';
+      if (castBtn) {
+        castBtn.classList.add('is-reeling');
+        castBtn.innerHTML = '🔄 HOLD TO REEL 🔄<span>(Keep green bar on fish!)</span>';
+      }
     }
   }
 
@@ -1298,6 +1395,9 @@ class Game {
 
     // Update fishing mechanics
     this.fishing.updateFishing(delta);
+
+    // Synchronize dynamic fishing button UI (mobile touch button & desktop cast button)
+    this.updateFishingUI();
 
     // Check prompt for nearest tree or shop
     this.updateContextPrompts();
