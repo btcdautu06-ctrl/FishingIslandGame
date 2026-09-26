@@ -188,54 +188,25 @@ class Game {
   }
 
   setupUI() {
-    // 1. Home Screen Control Mode Selection (PC vs Mobile)
-    this.controlMode = 'pc';
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
-    const cardPc = document.getElementById('card-mode-pc');
-    const cardMobile = document.getElementById('card-mode-mobile');
-    const btnEnterPc = document.getElementById('btn-enter-pc');
-    const btnEnterMobile = document.getElementById('btn-enter-mobile');
-    const btnStart = document.getElementById('btn-start-game');
-    const homeScreen = document.getElementById('home-screen');
-    const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
+    // 1. Automatic Platform Detection (Mobile / Tablet vs PC / Desktop)
+    this.controlMode = this.detectPlatform();
+    this.applyControlMode(this.controlMode);
 
-    // Auto-detect recommended default mode
-    if (isTouchDevice) {
-      this.controlMode = 'mobile';
-      if (cardMobile) cardMobile.classList.add('active');
-      if (cardPc) cardPc.classList.remove('active');
-    } else {
-      this.controlMode = 'pc';
-      if (cardPc) cardPc.classList.add('active');
-      if (cardMobile) cardMobile.classList.remove('active');
-    }
-
-    const startWithMode = (mode, e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      this.enterGame(mode);
+    // One-time audio engine resume on first user interaction anywhere
+    const unlockAudio = () => {
+      if (window.soundSystem) window.soundSystem.resume();
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
     };
+    window.addEventListener('pointerdown', unlockAudio, { passive: true });
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
 
-    if (cardPc) {
-      cardPc.addEventListener('click', (e) => startWithMode('pc', e));
-    }
-    if (btnEnterPc) {
-      btnEnterPc.addEventListener('click', (e) => startWithMode('pc', e));
-    }
-
-    if (cardMobile) {
-      cardMobile.addEventListener('click', (e) => startWithMode('mobile', e));
-    }
-    if (btnEnterMobile) {
-      btnEnterMobile.addEventListener('click', (e) => startWithMode('mobile', e));
-    }
-
-    if (btnStart) {
-      btnStart.addEventListener('click', (e) => startWithMode(this.controlMode, e));
-    }
-
+    // Manual toggle button in HUD (switches anytime if desired)
+    const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
     if (hudModeToggle) {
       hudModeToggle.addEventListener('click', () => {
         const nextMode = (this.controlMode === 'pc') ? 'mobile' : 'pc';
@@ -243,6 +214,14 @@ class Game {
         this.showToast(`Switched to ${nextMode.toUpperCase()} Mode!`, 'success');
       });
     }
+
+    setTimeout(() => {
+      if (this.controlMode === 'mobile') {
+        this.showToast('📱 Mobile Mode Auto-Detected (Touch Joystick & Jump Ready)', 'success');
+      } else {
+        this.showToast('🖥️ PC Mode Auto-Detected (WASD to Walk, Space to Jump)', 'success');
+      }
+    }, 1200);
 
     // 2. Cast button hold / release
     const castBtn = document.getElementById('btn-cast');
@@ -421,18 +400,18 @@ class Game {
     }
   }
 
-  enterGame(mode) {
-    this.controlMode = mode || this.controlMode || 'pc';
-    const homeScreen = document.getElementById('home-screen');
-    if (homeScreen) {
-      homeScreen.classList.add('hidden');
-      homeScreen.style.display = 'none';
+  detectPlatform() {
+    const ua = navigator.userAgent || '';
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isIPadOS = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const isSmallScreen = window.innerWidth <= 1024;
+
+    if (isMobileUA || isIPadOS || (hasTouch && (isCoarse || isSmallScreen))) {
+      return 'mobile';
     }
-    if (window.soundSystem) {
-      window.soundSystem.resume();
-    }
-    this.applyControlMode(this.controlMode);
-    this.showToast(`Entered island! Mode: ${this.controlMode.toUpperCase()}`, 'success');
+    return 'pc';
   }
 
   applyControlMode(mode) {
