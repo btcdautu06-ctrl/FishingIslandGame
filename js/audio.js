@@ -289,6 +289,44 @@ class SoundSystem {
     noise.start(now + 0.05);
   }
 
+  // Jumping whoosh sound
+  playJumpSound() {
+    if (!this.ctx || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.16);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 0.20);
+  }
+
+  // Soft landing impact thud
+  playLandSound(surface = 'sand') {
+    if (!this.ctx || this.isMuted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(surface === 'wood' ? 130 : 95, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.11);
+
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 0.14);
+  }
+
   // Plunging splash into water
   playSplash(isHeavy = false) {
     if (!this.ctx || this.isMuted) return;

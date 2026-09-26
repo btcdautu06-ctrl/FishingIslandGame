@@ -7,9 +7,67 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <!-- Fullscreen 3D Viewport -->
   <div id="canvas-container"></div>
+
+  <!-- HOME / TITLE START SCREEN: PC VS MOBILE CONTROL SELECTION -->
+  <div id="home-screen" class="home-screen">
+    <div class="home-backdrop"></div>
+    <div class="home-card">
+      <div class="home-header">
+        <div class="home-badge">🌴 3D ARCHIPELAGO ADVENTURE</div>
+        <h1 class="home-title">ISLAND ANGLER</h1>
+        <p class="home-subtitle">Journey across 4 perilous islands, catch 28 legendary sea titans, forage coconut trees, and explore the living archipelago.</p>
+      </div>
+
+      <div class="home-section-title">SELECT YOUR CONTROL MODE:</div>
+
+      <div class="home-modes-grid">
+        <!-- PC Card -->
+        <div id="card-mode-pc" class="home-mode-card active" data-mode="pc">
+          <div class="mode-card-badge">DESKTOP / LAPTOP</div>
+          <div class="mode-card-icon">🖥️</div>
+          <div class="mode-card-title">PC Mode</div>
+          <div class="mode-card-desc">Full keyboard and mouse controls with an ultra-clean, immersive HUD.</div>
+          <ul class="mode-card-features">
+            <li><span class="key-pill">W A S D</span> Walk & Explore</li>
+            <li><span class="key-pill">Space</span> <strong>Jump over Obstacles</strong></li>
+            <li><span class="key-pill">Shift</span> Fast Sprint</li>
+            <li><span class="key-pill">C / Cast</span> Cast & Reel Rod</li>
+            <li><span class="key-pill">Mouse</span> Orbit & Zoom (1st-person POV)</li>
+            <li><span class="key-pill">E</span> Interact & Shake Trees</li>
+            <li><span class="key-pill">V / F</span> Camera View & Headlamp</li>
+          </ul>
+        </div>
+
+        <!-- Mobile / Tablet Card -->
+        <div id="card-mode-mobile" class="home-mode-card" data-mode="mobile">
+          <div class="mode-card-badge">TOUCH / IPAD / PHONE</div>
+          <div class="mode-card-icon">📱</div>
+          <div class="mode-card-title">Mobile / Tablet Mode</div>
+          <div class="mode-card-desc">Equipped with Virtual Analog Joystick and intuitive on-screen touch buttons.</div>
+          <ul class="mode-card-features">
+            <li><span class="key-pill">🕹️ Joystick</span> Smooth 360° Movement</li>
+            <li><span class="key-pill">🦘 Jump</span> <strong>Dedicated Touch Jump Button</strong></li>
+            <li><span class="key-pill">⚡ Sprint</span> 1-Tap Sprint Toggle</li>
+            <li><span class="key-pill">🎣 Cast</span> Big 1-Touch Cast Rod Button</li>
+            <li><span class="key-pill">👆 Touch</span> Drag Screen to Orbit Camera</li>
+            <li><span class="key-pill">👋 Action</span> Shake Trees & Talk to NPCs</li>
+            <li><span class="key-pill">👌 Pinch</span> 2-Finger Zoom in & out</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="home-actions">
+        <button id="btn-start-game" class="btn-start-game">
+          <span>⛵ ENTER ISLAND & START FISHING</span>
+        </button>
+        <div class="home-hint-text">
+          💡 You can also switch between PC and Mobile mode anytime during gameplay via the <strong>🎮 Mode</strong> button in the top menu.
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- HUD Overlay -->
   <div id="hud">
@@ -52,7 +110,10 @@
         <button id="controls-help-btn" class="btn btn-outline">
           ❓ Guide
         </button>
-        <button id="mobile-qr-btn" class="btn btn-gold" title="Play on iPad or Phone via local Wi-Fi">
+        <button id="hud-mode-toggle-btn" class="btn btn-outline" title="Switch between PC Mode and Mobile Mode">
+          🎮 Mode: PC
+        </button>
+        <button id="mobile-qr-btn" class="btn btn-gold" title="Play on iPad or Phone via QR Code">
           📱 iPad Link
         </button>
       </div>
@@ -64,11 +125,15 @@
         <div id="joystick-thumb" class="joystick-thumb"></div>
       </div>
       <div class="touch-action-buttons">
-        <button id="btn-touch-interact" class="touch-action-btn" title="Interact / Shake Tree / Talk">
+        <button id="btn-touch-jump" class="touch-action-btn" title="Jump [Space]">
+          <span style="font-size: 22px;">🦘</span>
+          <span style="font-size: 10px; font-weight: bold;">Jump</span>
+        </button>
+        <button id="btn-touch-interact" class="touch-action-btn" title="Interact / Shake Tree / Talk [E]">
           <span style="font-size: 22px;">👋</span>
           <span style="font-size: 10px; font-weight: bold;">Action</span>
         </button>
-        <button id="btn-touch-sprint" class="touch-action-btn" title="Sprint Toggle">
+        <button id="btn-touch-sprint" class="touch-action-btn" title="Sprint Toggle [Shift]">
           <span style="font-size: 22px;">⚡</span>
           <span style="font-size: 10px; font-weight: bold;">Sprint</span>
         </button>
@@ -81,10 +146,10 @@
     <!-- Bottom Controls & Hints -->
     <div class="hud-bottom-bar">
       <div class="controls-hint">
-        <div><strong>Explore:</strong> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> | Sprint: <kbd>Shift</kbd> | <strong>View Mode:</strong> <kbd>V</kbd> | <strong>Light:</strong> <kbd>F</kbd></div>
-        <div><strong>Camera:</strong> Click & Drag Mouse | Zoom: Mouse Wheel (Zoom in for 1st-Person POV)</div>
-        <div><strong>Interact / Forage:</strong> Walk up to any of the 100+ Trees or Shop & press <kbd>E</kbd></div>
-        <div><strong>Fishing:</strong> Hold & release <kbd>Space</kbd> or <strong>Cast Rod</strong> button</div>
+        <div><strong>Explore:</strong> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> | <strong>Jump:</strong> <kbd>Space</kbd> | <strong>Sprint:</strong> <kbd>Shift</kbd> | <strong>View:</strong> <kbd>V</kbd> | <strong>Light:</strong> <kbd>F</kbd></div>
+        <div><strong>Fishing:</strong> Hold & release <kbd>C</kbd> or <strong>🎣 CAST ROD</strong> button (Space strikes bite & reels in)</div>
+        <div><strong>Interact / Forage:</strong> Walk up to any of the 240+ Trees, Campfire, or Tackle Shop & press <kbd>E</kbd></div>
+        <div><strong>Camera:</strong> Drag Mouse to Orbit | Scroll to Zoom (Zoom in for 1st-Person POV)</div>
       </div>
 
       <button id="btn-cast" class="big-cast-button">
@@ -311,6 +376,8 @@
         <p>Rest at the campfire or click the <strong>Time pill</strong> on your HUD to switch between Dawn, Day, Sunset, and Night. Apex beasts and bioluminescent legends emerge under starry skies!</p>
       </div>
     </div>
+  </div>
+
   <!-- MOBILE / IPAD QR MODAL -->
   <div id="mobile-modal" class="modal-overlay hidden">
     <div class="modal-box" style="max-width: 440px; text-align: center; border: 2px solid #f1c40f;">

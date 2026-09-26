@@ -52,6 +52,14 @@ class Player {
     this.camYaw = 0;
     this.viewMode = 'third_back';
 
+    // Jumping & Gravity Physics
+    this.velocityY = 0;
+    this.isGrounded = true;
+    this.jumpForce = 9.8;
+    this.gravity = -26.0;
+    this.jumpCooldown = 0;
+    this.playerRadius = 0.45;
+
     // High-Beam Angler Headlamp / Flashlight
     this.flashlightActive = false;
 
@@ -790,10 +798,15 @@ class Player {
       if (code === 'KeyA' || code === 'ArrowLeft') this.keys.left = true;
       if (code === 'KeyD' || code === 'ArrowRight') this.keys.right = true;
       if (code === 'ShiftLeft' || code === 'ShiftRight') this.keys.sprint = true;
-      if (code === 'Space') this.keys.jump = true;
+      if (code === 'Space') {
+        this.keys.jump = true;
+        if (!this.isDead && window.game && window.game.fishing && window.game.fishing.state === 'idle') {
+          this.jump();
+        }
+      }
 
-      // Camera view toggle: [V] or [C] (3rd Person -> 1st Person POV -> Front Face View)
-      if (code === 'KeyV' || code === 'KeyC') {
+      // Camera view toggle: [V] (3rd Person -> 1st Person POV -> Front Face View)
+      if (code === 'KeyV') {
         this.cycleCameraView();
       }
 
@@ -1019,6 +1032,18 @@ class Player {
       });
     }
 
+    // Touch Jump Button (Mobile)
+    const btnJump = document.getElementById('btn-touch-jump');
+    if (btnJump) {
+      const handleTouchJump = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.jump();
+      };
+      btnJump.addEventListener('touchstart', handleTouchJump, { passive: false });
+      btnJump.addEventListener('click', handleTouchJump);
+    }
+
     // Click on interaction prompt banner
     const promptElem = document.getElementById('interaction-prompt');
     if (promptElem) {
@@ -1028,6 +1053,179 @@ class Player {
         if (window.game) window.game.handleInteractKey();
       });
     }
+  }
+
+  jump() {
+    if (!this.isGrounded || this.isDead || this.jumpCooldown > 0) return;
+    this.velocityY = this.jumpForce;
+    this.isGrounded = false;
+    this.jumpCooldown = 0.22;
+    if (window.soundSystem && window.soundSystem.playJumpSound) {
+      window.soundSystem.playJumpSound();
+    }
+  }
+
+  // Solid Collision Detection: Prevents passing through 240+ trees, Captain Barnaby's shack, campfire, and railings
+  resolveObstacles(newX, newZ, playerRadius = 0.45) {
+    let px = newX;
+    let pz = newZ;
+
+    // 1. Solid Tree Trunks across Archipelago (240+ trees)
+    if (this.island && this.island.trees) {
+      const trees = this.island.trees;
+      for (let i = 0; i < trees.length; i++) {
+        const t = trees[i];
+        const dx = px - t.x;
+        const dz = pz - t.z;
+        if (Math.abs(dx) > 2.2 || Math.abs(dz) > 2.2) continue;
+
+        let trunkR = 0.70;
+        if (t.type === 'palm') trunkR = 0.60;
+        else if (t.type === 'oak') trunkR = 0.85;
+        else if (t.type === 'pine') trunkR = 0.68;
+        else if (t.type === 'willow') trunkR = 0.75;
+        else if (t.type === 'cherry') trunkR = 0.70;
+
+        const minDist = trunkR + playerRadius;
+        const distSq = dx * dx + dz * dz;
+        if (distSq < minDist * minDist) {
+          const dist = Math.sqrt(distSq);
+          if (dist > 0.001) {
+            const push = minDist - dist;
+            px += (dx / dist) * push;
+            pz += (dz / dist) * push;
+          } else {
+            px += minDist;
+          }
+        }
+      }
+    }
+
+    // 2. Captain Barnaby's Tackle Shack & Front Counter
+    // Shack center: (-14, 22), rotated by 0.3 rad
+    const shopX = -14;
+    const shopZ = 22;
+    const shopRot = 0.3;
+    const relX = px - shopX;
+    const relZ = pz - shopZ;
+    const cosR = Math.cos(-shopRot);
+    const sinR = Math.sin(-shopRot);
+    let locX = relX * cosR - relZ * sinR;
+    let locZ = relX * sinR + relZ * cosR;
+
+    // AABB 1: Shack main building (Width 7.5 -> half 3.75, Depth 6.0 -> half 3.0)
+    const shackHalfW = 3.75 + playerRadius;
+    const shackHalfD = 3.0 + playerRadius;
+    if (Math.abs(locX) < shackHalfW && Math.abs(locZ) < shackHalfD) {
+      const overlapX = shackHalfW - Math.abs(locX);
+      const overlapZ = shackHalfD - Math.abs(locZ);
+      if (overlapX < overlapZ) {
+        locX = Math.sign(locX) * shackHalfW;
+      } else {
+        locZ = Math.sign(locZ) * shackHalfD;
+      }
+    }
+
+    // AABB 2: Front Shop Counter (Width 4.6 -> half 2.3, Depth 1.5 -> half 0.75 at Z = 3.1)
+    const countHalfW = 2.3 + playerRadius;
+    const countZMin = (3.1 - 0.75) - playerRadius;
+    const countZMax = (3.1 + 0.75) + playerRadius;
+    if (Math.abs(locX) < countHalfW && locZ >= countZMin && locZ <= countZMax) {
+      const overlapX = countHalfW - Math.abs(locX);
+      const overlapZ = Math.min(Math.abs(locZ - countZMin), Math.abs(locZ - countZMax));
+      if (overlapX < overlapZ) {
+        locX = Math.sign(locX) * countHalfW;
+      } else {
+        locZ = (locZ < (countZMin + countZMax) / 2) ? countZMin : countZMax;
+      }
+    }
+
+    // Transform local coordinates back to world space
+    const cosInv = Math.cos(shopRot);
+    const sinInv = Math.sin(shopRot);
+    px = shopX + locX * cosInv - locZ * sinInv;
+    pz = shopZ + locX * sinInv + locZ * cosInv;
+
+    // 3. Haven Campfire Pit & Log Benches
+    const fireDx = px - 4;
+    const fireDz = pz - 28;
+    const fireMinDist = 1.45 + playerRadius;
+    const fireDistSq = fireDx * fireDx + fireDz * fireDz;
+    if (fireDistSq < fireMinDist * fireMinDist) {
+      const dist = Math.sqrt(fireDistSq);
+      if (dist > 0.001) {
+        const push = fireMinDist - dist;
+        px += (fireDx / dist) * push;
+        pz += (fireDz / dist) * push;
+      }
+    }
+
+    // Campfire Log Bench at (4, 30.7)
+    const benchDx = px - 4;
+    const benchDz = pz - 30.7;
+    const benchMinDist = 1.35 + playerRadius;
+    const benchDistSq = benchDx * benchDx + benchDz * benchDz;
+    if (benchDistSq < benchMinDist * benchMinDist) {
+      const dist = Math.sqrt(benchDistSq);
+      if (dist > 0.001) {
+        const push = benchMinDist - dist;
+        px += (benchDx / dist) * push;
+        pz += (benchDz / dist) * push;
+      }
+    }
+
+    // 4. Moored Ferry Boats (Ocean Pier)
+    const boatDx = px - 9.2;
+    const boatDz = pz - 117;
+    const boatHalfW = 1.3 + playerRadius;
+    const boatHalfD = 2.7 + playerRadius;
+    if (Math.abs(boatDx) < boatHalfW && Math.abs(boatDz) < boatHalfD) {
+      const ox = boatHalfW - Math.abs(boatDx);
+      const oz = boatHalfD - Math.abs(boatDz);
+      if (ox < oz) px = 9.2 + Math.sign(boatDx) * boatHalfW;
+      else pz = 117 + Math.sign(boatDz) * boatHalfD;
+    }
+
+    // 5. Solid Bridge Rope Railings (Keep player from sliding off side of bridge)
+    if (this.island && this.island.bridges) {
+      for (const b of this.island.bridges) {
+        const bdx = b.x2 - b.x1;
+        const bdz = b.z2 - b.z1;
+        const lenSq = bdx * bdx + bdz * bdz;
+        const t = ((px - b.x1) * bdx + (pz - b.z1) * bdz) / lenSq;
+        if (t >= 0.02 && t <= 0.98) {
+          const projX = b.x1 + t * bdx;
+          const projZ = b.z1 + t * bdz;
+          const latDist = Math.hypot(px - projX, pz - projZ);
+          const maxLateral = (b.width / 2) - playerRadius - 0.15;
+          if (latDist > maxLateral && latDist <= (b.width / 2) + 0.6) {
+            const nx = (px - projX) / latDist;
+            const nz = (pz - projZ) / latDist;
+            px = projX + nx * maxLateral;
+            pz = projZ + nz * maxLateral;
+          }
+        }
+      }
+    }
+
+    // 6. Solid Ocean Pier Walkway Railings / Posts
+    if (pz >= 75.0 && pz <= 113.0) {
+      const maxPierX = 2.2 - playerRadius;
+      if (Math.abs(px) > maxPierX && Math.abs(px) <= 3.2) {
+        px = Math.sign(px) * maxPierX;
+      }
+    }
+    if (pz > 113.0 && pz <= 122.5) {
+      const maxHeadX = 7.7 - playerRadius;
+      if (Math.abs(px) > maxHeadX && Math.abs(px) <= 8.8) {
+        px = Math.sign(px) * maxHeadX;
+      }
+      if (pz > 121.2 - playerRadius && pz <= 123.0) {
+        pz = 121.2 - playerRadius;
+      }
+    }
+
+    return { x: px, z: pz };
   }
 
   update(delta, isFishingActive, fishingState, tensionAmount = 0) {
@@ -1149,8 +1347,10 @@ class Player {
       const newX = this.position.x + vx;
       const newZ = this.position.z + vz;
 
-      this.position.x = newX;
-      this.position.z = newZ;
+      // Solid Collision Resolution (Trees, Shack, Campfire, Railings)
+      const resolved = this.resolveObstacles(newX, newZ, this.playerRadius);
+      this.position.x = resolved.x;
+      this.position.z = resolved.z;
 
       // Realistic Human Bipedal Locomotion Cycle
       const sprint = this.keys.sprint;
@@ -1202,10 +1402,10 @@ class Player {
         const isRightFoot = (this.stepCount % 2 === 0);
 
         const surface = (onPierWalk || onPierHead || onPondDock || onBridge) ? 'wood' : 'sand';
-        if (window.soundSystem) window.soundSystem.playFootstep(surface);
+        if (this.isGrounded && window.soundSystem) window.soundSystem.playFootstep(surface);
 
         // Dynamic Sand Displacement & Particles: Footprint decals, sand grain spray & dust puffs
-        if (surface === 'sand' && this.island.sandPhysics) {
+        if (this.isGrounded && surface === 'sand' && this.island.sandPhysics) {
           this.island.sandPhysics.onPlayerStep(this.position, this.rotation, isRightFoot, this.keys.sprint);
         }
       }
@@ -1240,20 +1440,51 @@ class Player {
     const onPondDock = (this.position.z >= -9.5 && this.position.z <= -1.8 && Math.abs(this.position.x - 14) <= 2.2);
     const bridgeInfo = this.island.getBridgeAt(this.position.x, this.position.z);
 
-    let targetY = this.island.getHeight(this.position.x, this.position.z);
+    let groundTargetY = this.island.getHeight(this.position.x, this.position.z);
     if (bridgeInfo) {
-      targetY = bridgeInfo.height; // Elevated safely on wooden suspension bridge!
+      groundTargetY = bridgeInfo.height; // Elevated safely on wooden suspension bridge!
     } else if (onPier) {
-      targetY = 1.4; // Elevated safely above ocean water
+      groundTargetY = 1.4; // Elevated safely above ocean water
     } else if (onPondDock) {
-      targetY = this.island.pondWaterLevel + 0.15; // Elevated safely above pond water
-    } else if (this.isMoving && this.island.sandPhysics && this.island.sandPhysics.isSand(this.position.x, this.position.z, targetY)) {
+      groundTargetY = this.island.pondWaterLevel + 0.15; // Elevated safely above pond water
+    } else if (this.isGrounded && this.isMoving && this.island.sandPhysics && this.island.sandPhysics.isSand(this.position.x, this.position.z, groundTargetY)) {
       // Natural soft sand compression under the boot step
       const sandSink = Math.abs(Math.sin(this.walkCycle)) * 0.038;
-      targetY -= sandSink;
+      groundTargetY -= sandSink;
     }
 
-    this.position.y = targetY;
+    if (this.jumpCooldown > 0) this.jumpCooldown -= delta;
+
+    // Vertical Gravity & Airborne Jump Mechanics
+    if (!this.isGrounded) {
+      this.velocityY += this.gravity * delta;
+      this.position.y += this.velocityY * delta;
+
+      // Landing check
+      if (this.position.y <= groundTargetY) {
+        this.position.y = groundTargetY;
+        this.velocityY = 0;
+        this.isGrounded = true;
+
+        const surface = (onPier || onPondDock || bridgeInfo) ? 'wood' : 'sand';
+        if (window.soundSystem && window.soundSystem.playLandSound) {
+          window.soundSystem.playLandSound(surface);
+        }
+        if (surface === 'sand' && this.island.sandPhysics) {
+          this.island.sandPhysics.onPlayerStep(this.position, this.rotation, true, true);
+        }
+      } else {
+        // Natural airborne jumping pose
+        this.rightHip.rotation.x = -0.32;
+        this.leftHip.rotation.x = -0.22;
+        this.rightKnee.rotation.x = 0.50;
+        this.leftKnee.rotation.x = 0.42;
+        this.leftShoulder.rotation.z = 0.38;
+        this.rightShoulder.rotation.z = -0.28;
+      }
+    } else {
+      this.position.y = groundTargetY;
+    }
 
     // Apply model transform
     this.mesh.position.copy(this.position);
@@ -1327,6 +1558,8 @@ class Player {
     this.deathTimer = 0;
     this.deathReason = '';
     this.keys = { forward: false, backward: false, left: false, right: false, sprint: false, jump: false };
+    this.velocityY = 0;
+    this.isGrounded = true;
     if (this.joystick) {
       this.joystick.x = 0;
       this.joystick.z = 0;

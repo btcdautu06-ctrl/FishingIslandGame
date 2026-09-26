@@ -188,7 +188,59 @@ class Game {
   }
 
   setupUI() {
-    // Cast button hold / release
+    // 1. Home Screen Control Mode Selection (PC vs Mobile)
+    this.controlMode = 'pc';
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
+    const cardPc = document.getElementById('card-mode-pc');
+    const cardMobile = document.getElementById('card-mode-mobile');
+    const btnStart = document.getElementById('btn-start-game');
+    const homeScreen = document.getElementById('home-screen');
+    const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
+
+    // Auto-detect recommended default mode
+    if (isTouchDevice) {
+      this.controlMode = 'mobile';
+      if (cardMobile) cardMobile.classList.add('active');
+      if (cardPc) cardPc.classList.remove('active');
+    } else {
+      this.controlMode = 'pc';
+      if (cardPc) cardPc.classList.add('active');
+      if (cardMobile) cardMobile.classList.remove('active');
+    }
+
+    if (cardPc) {
+      cardPc.addEventListener('click', () => {
+        this.controlMode = 'pc';
+        cardPc.classList.add('active');
+        if (cardMobile) cardMobile.classList.remove('active');
+      });
+    }
+
+    if (cardMobile) {
+      cardMobile.addEventListener('click', () => {
+        this.controlMode = 'mobile';
+        cardMobile.classList.add('active');
+        if (cardPc) cardPc.classList.remove('active');
+      });
+    }
+
+    if (btnStart) {
+      btnStart.addEventListener('click', () => {
+        if (homeScreen) homeScreen.classList.add('hidden');
+        if (window.soundSystem) window.soundSystem.resume();
+        this.applyControlMode(this.controlMode);
+      });
+    }
+
+    if (hudModeToggle) {
+      hudModeToggle.addEventListener('click', () => {
+        const nextMode = (this.controlMode === 'pc') ? 'mobile' : 'pc';
+        this.applyControlMode(nextMode);
+        this.showToast(`Switched to ${nextMode.toUpperCase()} Mode!`, 'success');
+      });
+    }
+
+    // 2. Cast button hold / release
     const castBtn = document.getElementById('btn-cast');
     const chargeBarFill = document.getElementById('cast-bar-fill');
 
@@ -212,7 +264,7 @@ class Game {
     window.addEventListener('mouseup', handleCastEnd);
     window.addEventListener('touchend', handleCastEnd);
 
-    // Keyboard Space support for Cast / Strike / Reel (and Instant Respawn)
+    // 3. Keyboard Input: Space (Jump & Strike/Reel), KeyC (Cast), KeyE (Interact)
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -228,6 +280,16 @@ class Game {
       if (e.code === 'Space') {
         window.soundSystem.resume();
         if (this.fishing.state === 'idle') {
+          // Space triggers jump when exploring dry land!
+          if (this.player) this.player.jump();
+        } else if (this.fishing.state === 'hook_alert') {
+          this.fishing.attemptHook();
+        } else if (this.fishing.state === 'reeling') {
+          this.fishing.setReelHolding(true);
+        }
+      } else if (e.code === 'KeyC') {
+        window.soundSystem.resume();
+        if (this.fishing.state === 'idle') {
           this.fishing.startChargingCast();
         } else if (this.fishing.state === 'hook_alert') {
           this.fishing.attemptHook();
@@ -241,7 +303,7 @@ class Game {
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.code === 'KeyC') {
         if (this.fishing.state === 'charging') {
           this.fishing.releaseCast();
         } else if (this.fishing.state === 'reeling') {
@@ -352,6 +414,20 @@ class Game {
         }
         this.respawnPlayer('campfire');
       });
+    }
+  }
+
+  applyControlMode(mode) {
+    this.controlMode = mode;
+    const touchControls = document.getElementById('touch-controls');
+    const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
+
+    if (mode === 'mobile') {
+      if (touchControls) touchControls.classList.remove('hidden');
+      if (hudModeToggle) hudModeToggle.innerHTML = '🎮 Mode: Mobile';
+    } else {
+      if (touchControls) touchControls.classList.add('hidden');
+      if (hudModeToggle) hudModeToggle.innerHTML = '🎮 Mode: PC';
     }
   }
 
