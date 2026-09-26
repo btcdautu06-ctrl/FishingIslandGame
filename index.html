@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Island Angler - 3D Island Fishing Adventure</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Fullscreen 3D Viewport -->
+  <div id="canvas-container"></div>
+
+  <!-- HUD Overlay -->
+  <div id="hud">
+    <!-- Top Bar -->
+    <div class="hud-top-bar">
+      <div class="hud-group-left">
+        <div id="time-display" class="hud-pill pill-time" title="Click to advance time of day">
+          ☀️ Bright Day
+        </div>
+        <div class="hud-pill pill-gold" title="Current Gold Coins">
+          🪙 <span id="hud-gold-amount">50</span>
+        </div>
+        <div id="bait-select-btn" class="hud-pill" title="Click to swap active bait">
+          🪱 Bait: <span id="hud-active-bait-name">Garden Earthworm (x10)</span>
+        </div>
+        <div class="hud-pill" title="Currently equipped fishing rod">
+          🎣 <span id="hud-active-rod-name">Willow Twig Rod (T1)</span>
+        </div>
+      </div>
+
+      <div class="hud-group-right">
+        <button id="camera-view-btn" class="btn btn-primary" title="Toggle Camera View: 3rd Person / 1st Person / Front Face View [V]">
+          👁️ View [V]
+        </button>
+        <button id="flashlight-toggle-btn" class="btn btn-outline" title="Toggle Angler Headlamp / Flashlight [F]">
+          🔦 Light [F]
+        </button>
+        <button id="nav-map-btn" class="btn btn-primary" title="Open Archipelago Map & NPC Locator [M]">
+          🗺️ Map [M]
+        </button>
+        <button id="nav-shop-btn" class="btn btn-gold">
+          🏪 Tackle Shop
+        </button>
+        <button id="nav-compendium-btn" class="btn btn-primary">
+          📖 Fish Compendium
+        </button>
+        <button id="audio-toggle-btn" class="btn btn-outline">
+          🔊 Sound On
+        </button>
+        <button id="controls-help-btn" class="btn btn-outline">
+          ❓ Guide
+        </button>
+        <button id="mobile-qr-btn" class="btn btn-gold" title="Play on iPad or Phone via local Wi-Fi">
+          📱 iPad Link
+        </button>
+      </div>
+    </div>
+
+    <!-- Touch Virtual Joystick (Auto-detected on Touch Screens / iPad / Mobile) -->
+    <div id="touch-controls" class="touch-controls hidden">
+      <div id="joystick-base" class="joystick-base">
+        <div id="joystick-thumb" class="joystick-thumb"></div>
+      </div>
+      <div class="touch-action-buttons">
+        <button id="btn-touch-interact" class="touch-action-btn" title="Interact / Shake Tree / Talk">
+          <span style="font-size: 22px;">👋</span>
+          <span style="font-size: 10px; font-weight: bold;">Action</span>
+        </button>
+        <button id="btn-touch-sprint" class="touch-action-btn" title="Sprint Toggle">
+          <span style="font-size: 22px;">⚡</span>
+          <span style="font-size: 10px; font-weight: bold;">Sprint</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- On-screen Navigation Waypoint Compass Bar -->
+    <div id="hud-waypoint-bar" class="hud-waypoint-bar hidden"></div>
+
+    <!-- Bottom Controls & Hints -->
+    <div class="hud-bottom-bar">
+      <div class="controls-hint">
+        <div><strong>Explore:</strong> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> | Sprint: <kbd>Shift</kbd> | <strong>View Mode:</strong> <kbd>V</kbd> | <strong>Light:</strong> <kbd>F</kbd></div>
+        <div><strong>Camera:</strong> Click & Drag Mouse | Zoom: Mouse Wheel (Zoom in for 1st-Person POV)</div>
+        <div><strong>Interact / Forage:</strong> Walk up to any of the 100+ Trees or Shop & press <kbd>E</kbd></div>
+        <div><strong>Fishing:</strong> Hold & release <kbd>Space</kbd> or <strong>Cast Rod</strong> button</div>
+      </div>
+
+      <button id="btn-cast" class="big-cast-button">
+        🎣 CAST ROD
+        <span>(Hold to charge power)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- In-World Dynamic Prompts -->
+  <div id="interaction-prompt" class="hidden">
+    [E] Shake Coconut Palm (Forage Bait & Fruit)
+  </div>
+
+  <!-- Cast Power Meter -->
+  <div id="cast-bar-container" class="hidden">
+    <div class="cast-bar-label">Power</div>
+    <div id="cast-bar-fill"></div>
+  </div>
+
+  <!-- Hook Strike Alert -->
+  <div id="strike-prompt" class="hidden">
+    ❗ BITE! PRESS SPACE OR CLICK TO STRIKE! ❗
+  </div>
+
+  <!-- Reel-In Minigame -->
+  <div id="reel-container" class="hidden">
+    <div class="reel-track-column" id="reel-track" title="Hold Left Click or Space to raise catch bar!">
+      <div id="reel-catch-bar"></div>
+      <div id="reel-fish-icon">🐟</div>
+    </div>
+
+    <div class="reel-gauge-column">
+      <div class="gauge-label">Reel</div>
+      <div class="gauge-track">
+        <div id="reel-progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="reel-gauge-column">
+      <div class="gauge-label">Tension</div>
+      <div class="gauge-track">
+        <div id="reel-tension-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATCH CELEBRATION MODAL -->
+  <div id="catch-modal" class="modal-overlay hidden">
+    <div class="modal-card catch-dialog">
+      <div class="catch-hero">
+        <span id="catch-rarity-badge" class="badge rarity-common">COMMON</span>
+        <h2 id="catch-name" class="catch-title">Silver Sardine</h2>
+        <div id="catch-scientific" class="scientific-name">Sardina pilchardus</div>
+        <div id="catch-record-badge" class="record-badge hidden">⭐ NEW PERSONAL RECORD! ⭐</div>
+        <!-- 3D Interactive Fish Showcase -->
+        <div id="catch-3d-preview" style="width: 100%; height: 180px; margin: 4px auto; border-radius: 12px; background: radial-gradient(circle, rgba(9, 132, 227, 0.25) 0%, rgba(0,0,0,0) 70%);"></div>
+      </div>
+
+      <div class="catch-details-box">
+        <div>
+          <span id="catch-size">18.4 cm</span>
+          <span>Length</span>
+        </div>
+        <div>
+          <span id="catch-weight">0.24 kg</span>
+          <span>Weight</span>
+        </div>
+        <div>
+          <span id="catch-gold">+25 Gold</span>
+          <span>Value</span>
+        </div>
+      </div>
+
+      <p id="catch-desc" class="item-desc" style="max-width: 440px; margin: 8px auto;"></p>
+
+      <div class="catch-actions">
+        <button id="btn-keep-fish" class="btn btn-primary">📦 Keep in Creel</button>
+        <button id="btn-sell-fish" class="btn btn-gold">🪙 Quick Sell</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOP & UPGRADES MODAL -->
+  <div id="shop-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>⚓ Captain Barnaby's Tackle & Bait Shack</h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs-row">
+          <button class="tab-btn active" data-tab="rods">🎣 Rods & Upgrades</button>
+          <button class="tab-btn" data-tab="baits">🪱 Bait Market</button>
+          <button class="tab-btn" data-tab="islands">🏝️ Island Charters</button>
+          <button class="tab-btn" data-tab="sell">💰 Sell Creel & Loot</button>
+        </div>
+        <div id="shop-content" class="items-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FISH COMPENDIUM ENCYCLOPEDIA MODAL -->
+  <div id="compendium-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2>📖 Island Fish Compendium</h2>
+          <span id="compendium-progress-text" style="font-size: 13px; color: #ffeaa7;">0 / 28 Discovered (0%)</span>
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="compendium-grid" class="items-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BAIT SELECTOR MODAL -->
+  <div id="bait-modal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <h2>🪱 Select Active Bait</h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="bait-list" class="items-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NPC TALKING DIALOGUE MODAL -->
+  <div id="dialogue-modal" class="modal-overlay hidden">
+    <div class="dialogue-card">
+      <div class="dialogue-header">
+        <div class="dialogue-speaker-info">
+          <div id="dialogue-avatar" class="dialogue-avatar">⚓</div>
+          <div>
+            <h3 id="dialogue-speaker-name" class="dialogue-speaker-name">Captain Barnaby</h3>
+            <span id="dialogue-speaker-title" class="dialogue-speaker-title">Master Angler & Island Ferryman</span>
+          </div>
+        </div>
+        <button id="dialogue-close-btn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="dialogue-body">
+        <div class="dialogue-speech-box">
+          <p id="dialogue-text" class="dialogue-speech"></p>
+        </div>
+      </div>
+
+      <div id="dialogue-options" class="dialogue-options-list"></div>
+    </div>
+  </div>
+
+  <!-- ARCHIPELAGO WORLD MAP & NPC TRACKER MODAL -->
+  <div id="map-modal" class="modal-overlay hidden">
+    <div class="map-modal-card">
+      <div class="modal-header">
+        <div class="map-title-box">
+          <h2>🗺️ Archipelago Sea Chart & NPC Map</h2>
+          <span class="map-subtitle">Nautical Chart of the 4 Islands • Press [M] to Toggle</span>
+        </div>
+        <button id="map-close-btn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="map-modal-body">
+        <!-- 2D Interactive Sea Chart Canvas -->
+        <div class="map-canvas-container">
+          <canvas id="map-canvas" width="720" height="620"></canvas>
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot dot-player"></span> 📍 You</span>
+            <span class="legend-item">⚓ Barnaby (Shop)</span>
+            <span class="legend-item">🎣 Pete (Pier)</span>
+            <span class="legend-item">🌿 Willow (Pond)</span>
+            <span class="legend-item">🔥 Rowan (Camp)</span>
+            <span class="legend-item">🐚 Finley (Beach)</span>
+            <span class="legend-item">🪸 Marina (Coral)</span>
+            <span class="legend-item">🤿 Coral (Reef)</span>
+            <span class="legend-item">🌋 Ignis (Volcano)</span>
+            <span class="legend-item">⚔️ Alistair (Titan)</span>
+          </div>
+        </div>
+
+        <!-- NPC Directory Sidebar -->
+        <div class="map-sidebar">
+          <div class="map-sidebar-header">
+            <h3>Archipelago NPCs (9)</h3>
+            <small>Click any NPC to track with navigation compass</small>
+          </div>
+          <div id="map-npc-list" class="map-npc-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS & HELP MODAL -->
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <h2>🌴 Angler's Island Field Guide</h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="line-height: 1.6; font-size: 14px;">
+        <h3 style="color: #ffeaa7; margin-bottom: 8px;">🏝️ Archipelago Exploration & 240+ Trees</h3>
+        <p>Walk across the islands using <strong>W, A, S, D</strong> and sprint with <strong>Shift</strong>. Drag the mouse to look around in full 3D!</p>
+        <p style="margin-top: 6px;">The world spans <strong>4 Archipelago Islands</strong> (Main Haven, Tropical Coral Atoll, Volcanic Pine Crags, and Titan Leviathan Atoll) connected by arched wooden suspension bridges. Over <strong>240 trees</strong> sway in the coastal wind! Press <kbd>E</kbd> near any tree to shake it for bait, coconuts, apples, and gold coins!</p>
+        
+        <h3 style="color: #ffeaa7; margin: 16px 0 8px 0;">☠️ Deadly Water Rule</h3>
+        <p>The open oceans and lakes are strictly lethal—<strong>touching water means instant death!</strong> Stay safely on land, docks, or on the elevated wooden suspension bridges. Walking off a bridge or stepping into the ocean will drown you immediately!</p>
+
+        <h3 style="color: #ffeaa7; margin: 16px 0 8px 0;">⚓ Bait Market & Island Deeds</h3>
+        <p>Visit <strong>Captain Barnaby's Shop</strong> (<kbd>E</kbd>) to buy bait in bulk (<strong>x1, x5, or x20 with bulk discounts</strong>) or purchase <strong>Sea Charters / Deeds</strong> to new islands! Once unlocked, charter Barnaby's Ferry for instant travel, or walk across the grand suspension bridges!</p>
+
+        <h3 style="color: #ffeaa7; margin: 16px 0 8px 0;">🎣 How to Catch Colossal Titans</h3>
+        <ol style="padding-left: 20px;">
+          <li>Walk to the edge of the water (ocean shores, deep ocean pier, hot spring, or pond).</li>
+          <li>Hold <kbd>Space</kbd> or click & hold <strong>CAST ROD</strong> to charge distance, then release!</li>
+          <li>Watch the water! Big fish cast huge underwater shadows. When an exclamation <strong>"❗ BITE!"</strong> appears, press <kbd>Space</kbd> to hook!</li>
+          <li><strong>Reel Minigame:</strong> Hold <kbd>Space</kbd> or Left Mouse Button to keep the green bar over the fish. Watch line tension! Colossal Titans like the <strong>Megalodon Rex, Kraken, and Great White Shark</strong> fight fiercely!</li>
+        </ol>
+
+        <h3 style="color: #ffeaa7; margin: 16px 0 8px 0;">☀️ Time of Day & Habitats</h3>
+        <p>Rest at the campfire or click the <strong>Time pill</strong> on your HUD to switch between Dawn, Day, Sunset, and Night. Apex beasts and bioluminescent legends emerge under starry skies!</p>
+      </div>
+    </div>
+  <!-- MOBILE / IPAD QR MODAL -->
+  <div id="mobile-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 440px; text-align: center; border: 2px solid #f1c40f;">
+      <div class="modal-header">
+        <h2 style="color: #f1c40f; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>📱</span> Chơi trên iPad / Điện thoại
+        </h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div style="padding: 16px 20px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <p style="font-size: 14px; color: #dfe6e9; margin: 0;">
+          Mở Camera iPad quét mã QR dưới đây hoặc vào Safari gõ link:
+        </p>
+        <div style="background: #ffffff; padding: 12px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=http://192.168.1.127:3000" alt="iPad QR Code" style="display: block; width: 200px; height: 200px; border-radius: 8px;" />
+        </div>
+        <div style="background: rgba(255, 234, 167, 0.15); border: 1px solid rgba(255, 234, 167, 0.4); padding: 10px 18px; border-radius: 14px; font-size: 18px; font-weight: 800; color: #ffeaa7; letter-spacing: 0.5px; user-select: all;">
+          http://192.168.1.127:3000
+        </div>
+        <div style="font-size: 12px; color: #a4b0be; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 10px; width: 100%;">
+          💡 <strong>Yêu cầu:</strong> iPad và máy tính phải kết nối <strong>cùng mạng Wi-Fi</strong>.<br>
+          🎮 Đã hỗ trợ <strong>cần gạt ảo (Virtual Joystick)</strong> và xoay camera cảm ứng trên iPad!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEATH OVERLAY (TOUCH WATER -> YOU DIE) -->
+  <div id="death-overlay" class="death-screen hidden">
+    <div class="death-box">
+      <div class="death-icon">☠️</div>
+      <h1 class="death-title">YOU DIED!</h1>
+      <p id="death-desc" class="death-desc">You touched the deadly water!</p>
+      <div class="death-warning">⚠️ The ocean waters are lethal! Stay safely elevated on land, docks, or the wooden suspension bridges.</div>
+      <button id="btn-respawn" class="btn btn-gold btn-respawn">⚡ Respawn Now</button>
+    </div>
+  </div>
+
+  <!-- SCREEN FADE OVERLAY FOR FERRY CHARTER TRAVEL -->
+  <div id="screen-fade" class="screen-fade hidden"></div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="three.min.js"></script>
+  <script>
+    // Fallback if local three.min.js didn't load
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/sky.js"></script>
+  <script src="js/water.js"></script>
+  <script src="js/fish.js"></script>
+  <script src="js/npc.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/island.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/fishing.js"></script>
+  <script src="js/game.js"></script>
+
+  <script>
+    // Help modal trigger
+    document.getElementById('controls-help-btn').addEventListener('click', () => {
+      document.getElementById('help-modal').classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>

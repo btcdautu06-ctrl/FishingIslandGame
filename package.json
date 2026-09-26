@@ -1,0 +1,12 @@
+﻿{
+  "name": "fishing-island-game",
+  "version": "1.0.0",
+  "description": "3D Island Fishing Game with diverse fish species, rods, baits, and interactive trees",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["fishing", "game", "threejs", "island"],
+  "author": "",
+  "license": "MIT"
+}
