@@ -193,6 +193,8 @@ class Game {
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
     const cardPc = document.getElementById('card-mode-pc');
     const cardMobile = document.getElementById('card-mode-mobile');
+    const btnEnterPc = document.getElementById('btn-enter-pc');
+    const btnEnterMobile = document.getElementById('btn-enter-mobile');
     const btnStart = document.getElementById('btn-start-game');
     const homeScreen = document.getElementById('home-screen');
     const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
@@ -208,28 +210,30 @@ class Game {
       if (cardMobile) cardMobile.classList.remove('active');
     }
 
+    const startWithMode = (mode, e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.enterGame(mode);
+    };
+
     if (cardPc) {
-      cardPc.addEventListener('click', () => {
-        this.controlMode = 'pc';
-        cardPc.classList.add('active');
-        if (cardMobile) cardMobile.classList.remove('active');
-      });
+      cardPc.addEventListener('click', (e) => startWithMode('pc', e));
+    }
+    if (btnEnterPc) {
+      btnEnterPc.addEventListener('click', (e) => startWithMode('pc', e));
     }
 
     if (cardMobile) {
-      cardMobile.addEventListener('click', () => {
-        this.controlMode = 'mobile';
-        cardMobile.classList.add('active');
-        if (cardPc) cardPc.classList.remove('active');
-      });
+      cardMobile.addEventListener('click', (e) => startWithMode('mobile', e));
+    }
+    if (btnEnterMobile) {
+      btnEnterMobile.addEventListener('click', (e) => startWithMode('mobile', e));
     }
 
     if (btnStart) {
-      btnStart.addEventListener('click', () => {
-        if (homeScreen) homeScreen.classList.add('hidden');
-        if (window.soundSystem) window.soundSystem.resume();
-        this.applyControlMode(this.controlMode);
-      });
+      btnStart.addEventListener('click', (e) => startWithMode(this.controlMode, e));
     }
 
     if (hudModeToggle) {
@@ -417,16 +421,36 @@ class Game {
     }
   }
 
+  enterGame(mode) {
+    this.controlMode = mode || this.controlMode || 'pc';
+    const homeScreen = document.getElementById('home-screen');
+    if (homeScreen) {
+      homeScreen.classList.add('hidden');
+      homeScreen.style.display = 'none';
+    }
+    if (window.soundSystem) {
+      window.soundSystem.resume();
+    }
+    this.applyControlMode(this.controlMode);
+    this.showToast(`Entered island! Mode: ${this.controlMode.toUpperCase()}`, 'success');
+  }
+
   applyControlMode(mode) {
     this.controlMode = mode;
     const touchControls = document.getElementById('touch-controls');
     const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
 
     if (mode === 'mobile') {
-      if (touchControls) touchControls.classList.remove('hidden');
+      if (touchControls) {
+        touchControls.classList.remove('hidden');
+        touchControls.style.display = 'block';
+      }
       if (hudModeToggle) hudModeToggle.innerHTML = '🎮 Mode: Mobile';
     } else {
-      if (touchControls) touchControls.classList.add('hidden');
+      if (touchControls) {
+        touchControls.classList.add('hidden');
+        touchControls.style.display = 'none';
+      }
       if (hudModeToggle) hudModeToggle.innerHTML = '🎮 Mode: PC';
     }
   }
