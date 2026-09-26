@@ -832,7 +832,7 @@ class Player {
     let prevMouseY = 0;
 
     window.addEventListener('mousedown', (e) => {
-      if (e.target.closest('#hud, #modal-overlay, #reel-container, #cast-bar-container, #touch-controls')) return;
+      if (e.target.closest('#hud, .modal-overlay, .modal-card, .modal-box, .modal-body, .modal-close-btn, #reel-container, #cast-bar-container, #touch-controls, .touch-action-btn, .btn, .hud-pill, #interaction-prompt, .big-cast-button, #btn-restore-ui, .btn-restore-ui, #tutorial-hud-widget, .dialogue-card, .map-modal-card')) return;
       isDragging = true;
       prevMouseX = e.clientX;
       prevMouseY = e.clientY;
@@ -859,7 +859,7 @@ class Player {
     let initialPinchDist = 0;
 
     window.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#hud, #modal-overlay, #reel-container, #cast-bar-container, #touch-controls, .btn, #interaction-prompt, .big-cast-button')) return;
+      if (e.target.closest('#hud, .modal-overlay, .modal-card, .modal-box, .modal-body, .modal-close-btn, #reel-container, #cast-bar-container, #touch-controls, .touch-action-btn, .btn, .hud-pill, #interaction-prompt, .big-cast-button, #btn-restore-ui, .btn-restore-ui, #tutorial-hud-widget, .dialogue-card, .map-modal-card')) return;
 
       if (e.touches.length === 1 && touchCameraId === null) {
         touchCameraId = e.touches[0].identifier;
@@ -1015,39 +1015,77 @@ class Player {
     // Touch Sprint Button
     const btnSprint = document.getElementById('btn-touch-sprint');
     if (btnSprint) {
-      btnSprint.addEventListener('click', (e) => {
-        e.preventDefault();
+      let sprintHandled = false;
+      const handleSprint = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.touchSprintToggled = !this.touchSprintToggled;
         this.keys.sprint = this.touchSprintToggled;
         btnSprint.classList.toggle('active', this.touchSprintToggled);
+      };
+      btnSprint.addEventListener('touchstart', (e) => {
+        sprintHandled = true;
+        handleSprint(e);
+      }, { passive: false });
+      btnSprint.addEventListener('click', (e) => {
+        if (sprintHandled) { sprintHandled = false; return; }
+        handleSprint(e);
       });
     }
 
     // Touch Interact Button
     const btnInteract = document.getElementById('btn-touch-interact');
     if (btnInteract) {
-      btnInteract.addEventListener('click', (e) => {
-        e.preventDefault();
+      let interactHandled = false;
+      const handleInteract = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         if (window.game) window.game.handleInteractKey();
+      };
+      btnInteract.addEventListener('touchstart', (e) => {
+        interactHandled = true;
+        handleInteract(e);
+      }, { passive: false });
+      btnInteract.addEventListener('click', (e) => {
+        if (interactHandled) { interactHandled = false; return; }
+        handleInteract(e);
       });
     }
 
     // Touch Jump Button (Mobile)
     const btnJump = document.getElementById('btn-touch-jump');
     if (btnJump) {
+      let jumpHandled = false;
       const handleTouchJump = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.jump();
       };
-      btnJump.addEventListener('touchstart', handleTouchJump, { passive: false });
-      btnJump.addEventListener('click', handleTouchJump);
+      btnJump.addEventListener('touchstart', (e) => {
+        jumpHandled = true;
+        handleTouchJump(e);
+      }, { passive: false });
+      btnJump.addEventListener('click', (e) => {
+        if (jumpHandled) { jumpHandled = false; return; }
+        handleTouchJump(e);
+      });
     }
 
     // Click on interaction prompt banner
     const promptElem = document.getElementById('interaction-prompt');
     if (promptElem) {
       promptElem.style.cursor = 'pointer';
+      promptElem.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.game) window.game.handleInteractKey();
+      }, { passive: false });
       promptElem.addEventListener('click', (e) => {
         e.preventDefault();
         if (window.game) window.game.handleInteractKey();

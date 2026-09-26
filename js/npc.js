@@ -461,6 +461,27 @@ class NPCSystem {
     };
   }
 
+  // Fast touch handler for 0ms mobile responsiveness
+  addFastTap(elem, callback) {
+    if (!elem) return;
+    let touchHandled = false;
+    elem.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      touchHandled = true;
+      if (window.soundSystem && window.soundSystem.resume) window.soundSystem.resume();
+      callback(e);
+      setTimeout(() => { touchHandled = false; }, 400);
+    }, { passive: false });
+    elem.addEventListener('click', (e) => {
+      if (touchHandled) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      callback(e);
+    });
+  }
+
   // 2. DIALOGUE MODAL UI
   initUI() {
     this.modal = document.getElementById('dialogue-modal');
@@ -472,7 +493,7 @@ class NPCSystem {
     this.closeBtn = document.getElementById('dialogue-close-btn');
 
     if (this.closeBtn) {
-      this.closeBtn.addEventListener('click', () => this.closeDialogue());
+      this.addFastTap(this.closeBtn, () => this.closeDialogue());
     }
 
     // Number keys (1, 2, 3, 4, 5) for quick option picking & Escape to close
@@ -546,8 +567,8 @@ class NPCSystem {
       }
     }, speed);
 
-    // Click anywhere on dialogue box to skip typing animation
-    this.speechText.onclick = () => {
+    // Click/touch anywhere on dialogue box to skip typing animation
+    this.addFastTap(this.speechText, () => {
       if (this.isTyping) {
         clearInterval(this.typewriterInterval);
         this.typewriterInterval = null;
@@ -555,7 +576,7 @@ class NPCSystem {
         this.isTyping = false;
         this.renderOptions(options);
       }
-    };
+    });
   }
 
   // WEB SPEECH SYNTHESIS (REAL SPOKEN VOICE)
@@ -592,7 +613,7 @@ class NPCSystem {
       btn.className = 'dialogue-option-btn';
       btn.innerHTML = `<span class="opt-num">${idx + 1}</span> ${opt.label}`;
 
-      btn.addEventListener('click', () => {
+      this.addFastTap(btn, () => {
         if (window.soundSystem) window.soundSystem.playRodClick();
 
         if (opt.action) {

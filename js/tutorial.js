@@ -60,6 +60,27 @@ class TutorialSystem {
     this.bindEvents();
   }
 
+  // Fast touch handler for 0ms mobile responsiveness
+  addFastTap(elem, callback) {
+    if (!elem) return;
+    let touchHandled = false;
+    elem.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      touchHandled = true;
+      if (window.soundSystem && window.soundSystem.resume) window.soundSystem.resume();
+      callback(e);
+      setTimeout(() => { touchHandled = false; }, 400);
+    }, { passive: false });
+    elem.addEventListener('click', (e) => {
+      if (touchHandled) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      callback(e);
+    });
+  }
+
   loadState() {
     try {
       const saved = localStorage.getItem('fishing_island_tutorial');
@@ -132,11 +153,11 @@ class TutorialSystem {
       `;
       const miniBtn = document.getElementById('tutorial-mini-btn');
       if (miniBtn) {
-        miniBtn.onclick = () => {
+        this.addFastTap(miniBtn, () => {
           this.isMinimized = false;
           this.saveState();
           this.updateHUDWidget();
-        };
+        });
       }
       return;
     }
@@ -161,13 +182,15 @@ class TutorialSystem {
         </div>
       `;
       const claimBtn = document.getElementById('tutorial-claim-btn');
-      if (claimBtn) claimBtn.onclick = () => this.claimReward();
+      if (claimBtn) this.addFastTap(claimBtn, () => this.claimReward());
       const minBtn = document.getElementById('tutorial-btn-min');
-      if (minBtn) minBtn.onclick = () => {
-        this.isMinimized = true;
-        this.saveState();
-        this.updateHUDWidget();
-      };
+      if (minBtn) {
+        this.addFastTap(minBtn, () => {
+          this.isMinimized = true;
+          this.saveState();
+          this.updateHUDWidget();
+        });
+      }
       return;
     }
 
@@ -198,14 +221,16 @@ class TutorialSystem {
     `;
 
     const openGuide = document.getElementById('tutorial-open-guide-btn');
-    if (openGuide) openGuide.onclick = () => this.openTutorialModal(this.currentStepIndex);
+    if (openGuide) this.addFastTap(openGuide, () => this.openTutorialModal(this.currentStepIndex));
 
     const minBtn = document.getElementById('tutorial-btn-min');
-    if (minBtn) minBtn.onclick = () => {
-      this.isMinimized = true;
-      this.saveState();
-      this.updateHUDWidget();
-    };
+    if (minBtn) {
+      this.addFastTap(minBtn, () => {
+        this.isMinimized = true;
+        this.saveState();
+        this.updateHUDWidget();
+      });
+    }
   }
 
   // Bind live gameplay triggers to auto-advance tutorial
@@ -226,10 +251,10 @@ class TutorialSystem {
     // 2. Open Guide button in HUD
     const guideBtn = document.getElementById('controls-help-btn');
     if (guideBtn) {
-      guideBtn.onclick = (e) => {
-        e.preventDefault();
+      this.addFastTap(guideBtn, (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         this.openTutorialModal();
-      };
+      });
     }
   }
 
@@ -498,45 +523,45 @@ class TutorialSystem {
 
     modal.classList.remove('hidden');
 
-    // Bind Close buttons
+    // Bind Close buttons with fast tap
     const closeBtn = document.getElementById('tutorial-close-btn');
-    if (closeBtn) closeBtn.onclick = () => modal.classList.add('hidden');
+    if (closeBtn) this.addFastTap(closeBtn, () => modal.classList.add('hidden'));
     const gotItBtn = document.getElementById('tutorial-gotit-btn');
-    if (gotItBtn) gotItBtn.onclick = () => modal.classList.add('hidden');
+    if (gotItBtn) this.addFastTap(gotItBtn, () => modal.classList.add('hidden'));
 
     // Tab buttons
     const tabBtns = modal.querySelectorAll('.tutorial-tab-btn');
     const tabPanes = modal.querySelectorAll('.tutorial-tab-pane');
     tabBtns.forEach(btn => {
-      btn.onclick = () => {
+      this.addFastTap(btn, () => {
         tabBtns.forEach(b => b.classList.remove('active'));
         tabPanes.forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         const target = modal.querySelector(`#tab-${btn.dataset.tab}`);
         if (target) target.classList.add('active');
-      };
+      });
     });
 
     // Toggle platform view preview
     let previewPC = isPC;
     const toggleBtn = document.getElementById('tutorial-toggle-platform');
     if (toggleBtn) {
-      toggleBtn.onclick = () => {
+      this.addFastTap(toggleBtn, () => {
         previewPC = !previewPC;
         toggleBtn.innerHTML = `Switch View (${previewPC ? 'Show Mobile' : 'Show PC'})`;
         const bannerStrong = modal.querySelector('.tutorial-platform-banner strong');
         if (bannerStrong) bannerStrong.innerText = previewPC ? '🖥️ Desktop PC' : '📱 Mobile / Touch';
         const contentWrap = document.getElementById('tutorial-controls-content');
         if (contentWrap) contentWrap.innerHTML = this.renderControlsContent(previewPC);
-      };
+      });
     }
 
     const modalClaimBtn = document.getElementById('modal-claim-btn');
     if (modalClaimBtn && this.currentStepIndex >= this.steps.length) {
-      modalClaimBtn.onclick = () => {
+      this.addFastTap(modalClaimBtn, () => {
         this.claimReward();
         this.openTutorialModal(4);
-      };
+      });
     }
   }
 

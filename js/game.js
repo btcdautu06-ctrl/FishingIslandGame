@@ -193,6 +193,27 @@ class Game {
     return group;
   }
 
+  // Universal 0ms Fast Touch & Click Listener for Mobile & Desktop
+  addFastTap(elem, callback) {
+    if (!elem) return;
+    let touchHandled = false;
+    elem.addEventListener('touchstart', (e) => {
+      touchHandled = true;
+      e.stopPropagation();
+      if (window.soundSystem) window.soundSystem.resume();
+      callback(e);
+    }, { passive: false });
+
+    elem.addEventListener('click', (e) => {
+      if (touchHandled) {
+        touchHandled = false;
+        return;
+      }
+      if (window.soundSystem) window.soundSystem.resume();
+      callback(e);
+    });
+  }
+
   setupUI() {
     // 1. Automatic Platform Detection (Mobile / Tablet vs PC / Desktop)
     this.controlMode = this.detectPlatform();
@@ -214,7 +235,7 @@ class Game {
     // Manual toggle button in HUD (switches anytime if desired)
     const hudModeToggle = document.getElementById('hud-mode-toggle-btn');
     if (hudModeToggle) {
-      hudModeToggle.addEventListener('click', () => {
+      this.addFastTap(hudModeToggle, () => {
         const nextMode = (this.controlMode === 'pc') ? 'mobile' : 'pc';
         this.applyControlMode(nextMode);
         this.showToast(`Switched to ${nextMode.toUpperCase()} Mode!`, 'success');
@@ -224,11 +245,11 @@ class Game {
     // Minimal UI / Cinematic Screen Toggle (Turns off UI except Fishing Button)
     const uiToggleBtn = document.getElementById('ui-toggle-btn');
     if (uiToggleBtn) {
-      uiToggleBtn.addEventListener('click', () => this.toggleUIVisibility());
+      this.addFastTap(uiToggleBtn, () => this.toggleUIVisibility());
     }
     const restoreUIBtn = document.getElementById('btn-restore-ui');
     if (restoreUIBtn) {
-      restoreUIBtn.addEventListener('click', () => this.toggleUIVisibility());
+      this.addFastTap(restoreUIBtn, () => this.toggleUIVisibility());
     }
 
     setTimeout(() => {
@@ -350,9 +371,11 @@ class Game {
 
     // Strike button
     const strikeBtn = document.getElementById('strike-prompt');
-    strikeBtn.addEventListener('click', () => {
-      this.fishing.attemptHook();
-    });
+    if (strikeBtn) {
+      this.addFastTap(strikeBtn, () => {
+        this.fishing.attemptHook();
+      });
+    }
 
     // Reel track interaction (hold mouse / touch to reel)
     const reelTrack = document.getElementById('reel-track');
@@ -370,32 +393,55 @@ class Game {
     window.addEventListener('touchend', onReelEnd);
 
     // Quick Bait Selector
-    document.getElementById('bait-select-btn').addEventListener('click', () => {
+    this.addFastTap(document.getElementById('bait-select-btn'), () => {
       this.openBaitSelectorModal();
     });
 
     // Shop Button
-    document.getElementById('nav-shop-btn').addEventListener('click', () => {
+    this.addFastTap(document.getElementById('nav-shop-btn'), () => {
       this.openShopModal('rods');
     });
 
     // Compendium Button
-    document.getElementById('nav-compendium-btn').addEventListener('click', () => {
+    this.addFastTap(document.getElementById('nav-compendium-btn'), () => {
       this.openCompendiumModal();
     });
 
+    // Archipelago Map Button
+    const navMapBtn = document.getElementById('nav-map-btn');
+    if (navMapBtn) {
+      this.addFastTap(navMapBtn, () => {
+        if (this.map) this.map.toggle();
+      });
+    }
+
+    // Interactive Tutorial & Guide Button
+    const tutorialBtn = document.getElementById('controls-help-btn');
+    if (tutorialBtn) {
+      this.addFastTap(tutorialBtn, () => {
+        if (this.tutorial) {
+          this.tutorial.openTutorialModal();
+        } else {
+          const helpModal = document.getElementById('help-modal');
+          if (helpModal) helpModal.classList.remove('hidden');
+        }
+      });
+    }
+
     // Audio Mute Button
     const muteBtn = document.getElementById('audio-toggle-btn');
-    muteBtn.addEventListener('click', () => {
-      window.soundSystem.resume();
-      const isMuted = window.soundSystem.toggleMute();
-      muteBtn.innerText = isMuted ? '🔇 Muted' : '🔊 Sound On';
-    });
+    if (muteBtn) {
+      this.addFastTap(muteBtn, () => {
+        window.soundSystem.resume();
+        const isMuted = window.soundSystem.toggleMute();
+        muteBtn.innerText = isMuted ? '🔇 Muted' : '🔊 Sound On';
+      });
+    }
 
     // Camera View Toggle Button (3rd Person -> 1st Person POV -> Front Face View)
     const viewBtn = document.getElementById('camera-view-btn');
     if (viewBtn) {
-      viewBtn.addEventListener('click', () => {
+      this.addFastTap(viewBtn, () => {
         if (this.player) this.player.cycleCameraView();
       });
     }
@@ -403,7 +449,7 @@ class Game {
     // Angler Headlamp / Flashlight Button
     const lightBtn = document.getElementById('flashlight-toggle-btn');
     if (lightBtn) {
-      lightBtn.addEventListener('click', () => {
+      this.addFastTap(lightBtn, () => {
         if (this.player) this.player.toggleFlashlight();
       });
     }
@@ -411,43 +457,79 @@ class Game {
     // iPad / Mobile QR Code Button
     const mobileQrBtn = document.getElementById('mobile-qr-btn');
     if (mobileQrBtn) {
-      mobileQrBtn.addEventListener('click', () => {
+      this.addFastTap(mobileQrBtn, () => {
         const modal = document.getElementById('mobile-modal');
         if (modal) modal.classList.remove('hidden');
       });
     }
 
+    // Catch Modal Actions (Keep Fish & Quick Sell)
+    const keepFishBtn = document.getElementById('btn-keep-fish');
+    if (keepFishBtn) {
+      this.addFastTap(keepFishBtn, () => {
+        if (!this.lastCatchData) return;
+        const data = this.lastCatchData;
+        const f = data.fish;
+        const creel = JSON.parse(localStorage.getItem('fishing_island_creel') || '[]');
+        creel.push({
+          id: f.id,
+          name: f.name,
+          rarity: f.rarity,
+          sizeCm: data.sizeCm,
+          weightKg: data.weightKg,
+          gold: data.gold
+        });
+        localStorage.setItem('fishing_island_creel', JSON.stringify(creel));
+        this.showToast(`Added ${f.name} to creel!`, 'success');
+        const modal = document.getElementById('catch-modal');
+        if (modal) modal.classList.add('hidden');
+        this.fishing.state = 'idle';
+        this.updateHUD();
+        this.lastCatchData = null;
+      });
+    }
+
+    const sellFishBtn = document.getElementById('btn-sell-fish');
+    if (sellFishBtn) {
+      this.addFastTap(sellFishBtn, () => {
+        if (!this.lastCatchData) return;
+        const data = this.lastCatchData;
+        const f = data.fish;
+        this.addGold(data.gold);
+        this.showToast(`Sold ${f.name} for +${data.gold} Gold!`, 'success');
+        const modal = document.getElementById('catch-modal');
+        if (modal) modal.classList.add('hidden');
+        this.fishing.state = 'idle';
+        this.updateHUD();
+        this.lastCatchData = null;
+      });
+    }
+
     // Close modals
     document.querySelectorAll('.modal-close-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      this.addFastTap(btn, () => {
         document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
       });
     });
 
     // Campfire quick rest button on HUD
-    document.getElementById('time-display').addEventListener('click', () => {
+    this.addFastTap(document.getElementById('time-display'), () => {
       this.advanceTimeOfDay();
     });
 
     // Respawn buttons on death screen
     const respawnBtn = document.getElementById('btn-respawn');
     if (respawnBtn) {
-      respawnBtn.addEventListener('click', (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+      this.addFastTap(respawnBtn, (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         this.respawnPlayer('trail');
       });
     }
 
     const respawnCampfireBtn = document.getElementById('btn-respawn-campfire');
     if (respawnCampfireBtn) {
-      respawnCampfireBtn.addEventListener('click', (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+      this.addFastTap(respawnCampfireBtn, (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         this.respawnPlayer('campfire');
       });
     }
@@ -927,12 +1009,15 @@ class Game {
         </button>
       `;
 
-      card.querySelector('button').addEventListener('click', () => {
-        this.fishing.activeBaitId = bait.id;
-        this.showToast(`Equipped ${bait.name}!`, 'success');
-        this.updateHUD();
-        modal.classList.add('hidden');
-      });
+      const equipBtn = card.querySelector('button');
+      if (equipBtn) {
+        this.addFastTap(equipBtn, () => {
+          this.fishing.activeBaitId = bait.id;
+          this.showToast(`Equipped ${bait.name}!`, 'success');
+          this.updateHUD();
+          modal.classList.add('hidden');
+        });
+      }
 
       list.appendChild(card);
     });
@@ -945,13 +1030,13 @@ class Game {
     modal.classList.remove('hidden');
     this.renderShopTab(defaultTab);
 
-    // Setup shop tabs
+    // Setup shop tabs with instant mobile tap
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.onclick = () => {
+      this.addFastTap(btn, () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.renderShopTab(btn.dataset.tab);
-      };
+      });
     });
   }
 
@@ -986,7 +1071,7 @@ class Game {
         `;
 
         const btn = card.querySelector('.shop-btn');
-        btn.addEventListener('click', () => {
+        this.addFastTap(btn, () => {
           if (rod.owned) {
             this.player.equipRod(rod.id);
             localStorage.setItem('fishing_island_active_rod', rod.id);
@@ -1076,7 +1161,7 @@ class Game {
         if (bait.isReusable) {
           const btn = card.querySelector('.buy-lure-btn');
           if (btn && !isOwnedLure) {
-            btn.addEventListener('click', () => {
+            this.addFastTap(btn, () => {
               if (this.gold >= p1) {
                 this.gold -= p1;
                 bait.count = 1;
@@ -1093,7 +1178,7 @@ class Game {
           }
         } else {
           card.querySelectorAll('.bulk-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            this.addFastTap(btn, () => {
               const count = parseInt(btn.dataset.count, 10);
               const cost = parseInt(btn.dataset.price, 10);
               if (this.gold >= cost) {
@@ -1127,9 +1212,12 @@ class Game {
       `;
       content.appendChild(topBar);
 
-      topBar.querySelector('.btn-hub-return').addEventListener('click', () => {
-        this.fastTravelTo({ x: 0, y: 1.4, z: 82 }, 'Main Haven Pier');
-      });
+      const returnBtn = topBar.querySelector('.btn-hub-return');
+      if (returnBtn) {
+        this.addFastTap(returnBtn, () => {
+          this.fastTravelTo({ x: 0, y: 1.4, z: 82 }, 'Main Haven Pier');
+        });
+      }
 
       window.GAME_DATA.islands.forEach(island => {
         const card = document.createElement('div');
@@ -1159,24 +1247,30 @@ class Game {
         `;
 
         if (island.unlocked) {
-          card.querySelector('.travel-btn').addEventListener('click', () => {
-            this.fastTravelTo(island.fastTravelPos, island.name);
-          });
+          const travelBtn = card.querySelector('.travel-btn');
+          if (travelBtn) {
+            this.addFastTap(travelBtn, () => {
+              this.fastTravelTo(island.fastTravelPos, island.name);
+            });
+          }
         } else {
-          card.querySelector('.buy-island-btn').addEventListener('click', () => {
-            if (this.gold >= island.price) {
-              this.gold -= island.price;
-              island.unlocked = true;
-              this.saveUnlockedIslands();
-              localStorage.setItem('fishing_island_gold', this.gold.toString());
-              window.soundSystem.playCoin();
-              this.showToast(`⚓ Purchased Sea Deed for ${island.name}! Ferry service unlocked!`, 'success');
-              this.updateHUD();
-              this.renderShopTab('islands');
-            } else {
-              this.showToast(`Need 🪙 ${island.price} Gold to charter this island!`, 'warning');
-            }
-          });
+          const buyBtn = card.querySelector('.buy-island-btn');
+          if (buyBtn) {
+            this.addFastTap(buyBtn, () => {
+              if (this.gold >= island.price) {
+                this.gold -= island.price;
+                island.unlocked = true;
+                this.saveUnlockedIslands();
+                localStorage.setItem('fishing_island_gold', this.gold.toString());
+                window.soundSystem.playCoin();
+                this.showToast(`⚓ Purchased Sea Deed for ${island.name}! Ferry service unlocked!`, 'success');
+                this.updateHUD();
+                this.renderShopTab('islands');
+              } else {
+                this.showToast(`Need 🪙 ${island.price} Gold to charter this island!`, 'warning');
+              }
+            });
+          }
         }
 
         content.appendChild(card);
@@ -1198,16 +1292,19 @@ class Game {
       `;
       content.appendChild(headerDiv);
 
-      headerDiv.querySelector('#btn-sell-all').addEventListener('click', () => {
-        if (totalItems > 0) {
-          this.addGold(totalWorth);
-          localStorage.setItem('fishing_island_creel', '[]');
-          this.inventory = [];
-          this.saveInventory();
-          this.showToast(`Sold all items to Barnaby for +${totalWorth} Gold!`, 'success');
-          this.renderShopTab('sell');
-        }
-      });
+      const sellAllBtn = headerDiv.querySelector('#btn-sell-all');
+      if (sellAllBtn) {
+        this.addFastTap(sellAllBtn, () => {
+          if (totalItems > 0) {
+            this.addGold(totalWorth);
+            localStorage.setItem('fishing_island_creel', '[]');
+            this.inventory = [];
+            this.saveInventory();
+            this.showToast(`Sold all items to Barnaby for +${totalWorth} Gold!`, 'success');
+            this.renderShopTab('sell');
+          }
+        });
+      }
 
       if (totalItems === 0) {
         const emptyDiv = document.createElement('div');
@@ -1339,32 +1436,8 @@ class Game {
       this.fishViewerScene.add(this.currentFishModel);
     }
 
-    // Keep & Creel Button
-    document.getElementById('btn-keep-fish').onclick = () => {
-      const creel = JSON.parse(localStorage.getItem('fishing_island_creel') || '[]');
-      creel.push({
-        id: f.id,
-        name: f.name,
-        rarity: f.rarity,
-        sizeCm: data.sizeCm,
-        weightKg: data.weightKg,
-        gold: data.gold
-      });
-      localStorage.setItem('fishing_island_creel', JSON.stringify(creel));
-      this.showToast(`Added ${f.name} to creel!`, 'success');
-      modal.classList.add('hidden');
-      this.fishing.state = 'idle';
-      this.updateHUD();
-    };
-
-    // Quick Sell Button
-    document.getElementById('btn-sell-fish').onclick = () => {
-      this.addGold(data.gold);
-      this.showToast(`Sold ${f.name} for +${data.gold} Gold!`, 'success');
-      modal.classList.add('hidden');
-      this.fishing.state = 'idle';
-      this.updateHUD();
-    };
+    // Store catch data for instant fast tap handlers (bound in setupUI)
+    this.lastCatchData = data;
 
     modal.classList.remove('hidden');
   }

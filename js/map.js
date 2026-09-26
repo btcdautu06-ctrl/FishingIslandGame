@@ -188,6 +188,27 @@ class ArchipelagoMap {
     ];
   }
 
+  // Fast touch handler for 0ms mobile responsiveness
+  addFastTap(elem, callback) {
+    if (!elem) return;
+    let touchHandled = false;
+    elem.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      touchHandled = true;
+      if (window.soundSystem && window.soundSystem.resume) window.soundSystem.resume();
+      callback(e);
+      setTimeout(() => { touchHandled = false; }, 400);
+    }, { passive: false });
+    elem.addEventListener('click', (e) => {
+      if (touchHandled) {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      callback(e);
+    });
+  }
+
   // 2. INITIALIZE MODAL & CANVAS UI
   initUI() {
     this.modal = document.getElementById('map-modal');
@@ -199,13 +220,13 @@ class ArchipelagoMap {
     // Close button
     const closeBtn = document.getElementById('map-close-btn');
     if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.toggle(false));
+      this.addFastTap(closeBtn, () => this.toggle(false));
     }
 
     // Top Bar HUD Button
     const navMapBtn = document.getElementById('nav-map-btn');
     if (navMapBtn) {
-      navMapBtn.addEventListener('click', () => this.toggle());
+      this.addFastTap(navMapBtn, () => this.toggle());
     }
 
     // Keyboard shortcut [M]
@@ -216,10 +237,31 @@ class ArchipelagoMap {
       }
     });
 
-    // Canvas Mouse Interaction (Hover tooltips & Click-to-Track)
+    // Canvas Mouse & Touch Interaction (Hover tooltips & Click/Touch-to-Track)
     if (this.canvas) {
       this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
       this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+      this.canvas.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          const touch = e.touches[0];
+          const rect = this.canvas.getBoundingClientRect();
+          const mx = (touch.clientX - rect.left) * (this.mapWidth / rect.width);
+          const my = (touch.clientY - rect.top) * (this.mapHeight / rect.height);
+          let found = null;
+          for (const npc of this.npcLocations) {
+            const p = this.toScreen(npc.x, npc.z);
+            const d = Math.hypot(p.x - mx, p.y - my);
+            if (d <= 35) { // generous touch target on mobile
+              found = npc;
+              break;
+            }
+          }
+          if (found) {
+            e.preventDefault();
+            this.setTrackedNPC(found);
+          }
+        }
+      }, { passive: false });
       this.canvas.addEventListener('mouseleave', () => {
         this.hoveredNPC = null;
         this.renderMap();
@@ -648,7 +690,7 @@ class ArchipelagoMap {
           </div>
         `;
 
-        card.addEventListener('click', () => {
+        this.addFastTap(card, () => {
           this.setTrackedNPC(npc);
         });
 

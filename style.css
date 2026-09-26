@@ -482,16 +482,32 @@ body, html {
 }
 
 .modal-close-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
   font-size: 24px;
-  color: #b2bec3;
+  color: #dfe6e9;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-.modal-close-btn:hover {
+.modal-close-btn:hover, .modal-close-btn:active {
+  background: rgba(231, 76, 60, 0.85);
   color: #fff;
+  border-color: #e74c3c;
+  transform: scale(1.08);
 }
 
 .modal-body {
@@ -1620,18 +1636,18 @@ body, html {
 
 /* --- TOUCH CONTROLS FOR IPAD & MOBILE --- */
 .touch-controls {
-  position: absolute;
-  bottom: 30px;
-  left: 30px;
-  z-index: 50;
+  position: fixed;
+  bottom: 22px;
+  left: 20px;
+  z-index: 60;
   pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .joystick-base {
-  width: 140px;
-  height: 140px;
+  width: 130px;
+  height: 130px;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.55) 100%);
   border: 3px solid rgba(255, 255, 255, 0.45);
   border-radius: 50%;
@@ -1643,8 +1659,8 @@ body, html {
 }
 
 .joystick-thumb {
-  width: 58px;
-  height: 58px;
+  width: 54px;
+  height: 54px;
   background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 100%);
   border: 2px solid #ffffff;
   border-radius: 50%;
@@ -1658,20 +1674,21 @@ body, html {
 
 .touch-action-buttons {
   position: fixed;
-  bottom: 160px;
-  right: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  z-index: 50;
+  bottom: 20px;
+  right: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, 62px);
+  grid-template-rows: repeat(2, 62px);
+  gap: 12px;
+  align-items: center;
+  justify-items: center;
+  z-index: 60;
   pointer-events: auto;
 }
 
 .touch-action-btn {
-  width: 64px;
-  height: 64px;
   border-radius: 50%;
-  background: rgba(20, 20, 25, 0.75);
+  background: rgba(20, 20, 25, 0.78);
   border: 2px solid rgba(255, 255, 255, 0.5);
   color: #fff;
   display: flex;
@@ -1685,7 +1702,26 @@ body, html {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: all 0.15s ease;
+}
+
+#btn-touch-sprint {
+  order: 1;
+  width: 54px;
+  height: 54px;
+}
+
+#btn-touch-interact {
+  order: 2;
+  width: 58px;
+  height: 58px;
+}
+
+#btn-touch-jump {
+  order: 3;
+  width: 62px;
+  height: 62px;
 }
 
 .touch-action-btn:active, .touch-action-btn.active {
@@ -1697,14 +1733,16 @@ body, html {
 
 /* Dedicated Mobile Touch Fishing Action Button */
 .touch-action-btn-fish {
-  width: 78px;
-  height: 78px;
+  order: 4;
+  width: 76px;
+  height: 76px;
   background: linear-gradient(135deg, #00b894 0%, #0984e3 100%);
   border: 3px solid #ffeaa7;
   box-shadow: 0 6px 24px rgba(0, 184, 148, 0.65), 0 0 16px rgba(241, 196, 15, 0.45);
   position: relative;
   overflow: visible;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .touch-action-btn-fish .touch-fish-icon {
@@ -2712,6 +2750,151 @@ body.ui-minimal-mode #btn-cast {
 
 .btn-restore-ui.hidden {
   display: none !important;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE ENHANCEMENTS (ALL BUTTONS TOUCH-OPTIMIZED)
+   ========================================================================== */
+@media (max-width: 900px) {
+  #hud {
+    padding: 8px 12px;
+  }
+
+  .hud-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .hud-group-left, .hud-group-right {
+    display: flex;
+    overflow-x: auto;
+    width: 100%;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+    padding-bottom: 2px;
+  }
+
+  .hud-group-left::-webkit-scrollbar,
+  .hud-group-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hud-pill, .hud-group-right .btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .controls-hint {
+    display: none !important;
+  }
+
+  .hud-bottom-bar {
+    justify-content: flex-end;
+  }
+
+  /* When mobile touch controls are shown, hide the bulky desktop bottom cast button */
+  .touch-controls:not(.hidden) ~ .hud-bottom-bar #btn-cast {
+    display: none !important;
+  }
+
+  /* Modals sizing on mobile screens */
+  .modal-card {
+    max-width: 96%;
+    max-height: 88vh;
+    border-radius: 18px;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 14px;
+  }
+
+  .tabs-row {
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 8px;
+  }
+
+  .tabs-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .items-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .map-modal-card {
+    width: 98%;
+    padding: 12px;
+    max-height: 92vh;
+  }
+
+  .map-modal-body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .map-sidebar {
+    max-height: 220px;
+  }
+
+  .dialogue-card {
+    width: 96%;
+    padding: 14px;
+  }
+
+  .dialogue-speech {
+    font-size: 14px;
+  }
+
+  .dialogue-option-btn {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .catch-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .catch-actions .btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .death-actions-row {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .death-actions-row .btn {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 
