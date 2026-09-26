@@ -28,6 +28,7 @@ class Game {
     this.sessionFishCaught = 0;
     this.sessionTreesShaken = 0;
     this.deathParticlesActive = false;
+    this.isUIMinimal = false;
 
     this.initThree();
     this.initSystems();
@@ -220,6 +221,16 @@ class Game {
       });
     }
 
+    // Minimal UI / Cinematic Screen Toggle (Turns off UI except Fishing Button)
+    const uiToggleBtn = document.getElementById('ui-toggle-btn');
+    if (uiToggleBtn) {
+      uiToggleBtn.addEventListener('click', () => this.toggleUIVisibility());
+    }
+    const restoreUIBtn = document.getElementById('btn-restore-ui');
+    if (restoreUIBtn) {
+      restoreUIBtn.addEventListener('click', () => this.toggleUIVisibility());
+    }
+
     setTimeout(() => {
       if (this.controlMode === 'mobile') {
         this.showToast('📱 Mobile Mode Auto-Detected (Touch Joystick & Jump Ready)', 'success');
@@ -321,6 +332,9 @@ class Game {
       } else if (e.code === 'KeyE') {
         // Interact key (Talk to Barnaby, Shake tree, Rest at campfire)
         this.handleInteractKey();
+      } else if (e.code === 'KeyU' || e.code === 'KeyH') {
+        // Toggle Clean Screen / Hide UI Except Fishing Button [U]
+        this.toggleUIVisibility();
       }
     });
 
@@ -535,6 +549,26 @@ class Game {
         castBtn.classList.add('is-reeling');
         castBtn.innerHTML = '🔄 HOLD TO REEL 🔄<span>(Keep green bar on fish!)</span>';
       }
+    }
+  }
+
+  // --- CINEMATIC CLEAN SCREEN / MINIMAL UI TOGGLE ---
+  toggleUIVisibility() {
+    this.isUIMinimal = !this.isUIMinimal;
+    const body = document.body;
+    const restoreBtn = document.getElementById('btn-restore-ui');
+    const toggleBtn = document.getElementById('ui-toggle-btn');
+
+    if (this.isUIMinimal) {
+      body.classList.add('ui-minimal-mode');
+      if (restoreBtn) restoreBtn.classList.remove('hidden');
+      if (toggleBtn) toggleBtn.innerHTML = '👁️ Show UI [U]';
+      this.showToast('🎬 Clean Screen Mode: UI hidden except Fishing Button! Press [U] or tap 👁️ to restore', 'info');
+    } else {
+      body.classList.remove('ui-minimal-mode');
+      if (restoreBtn) restoreBtn.classList.add('hidden');
+      if (toggleBtn) toggleBtn.innerHTML = '👁️ Hide UI [U]';
+      this.showToast('🖥️ Full Interface Restored', 'success');
     }
   }
 

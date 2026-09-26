@@ -2625,6 +2625,96 @@ body, html {
   }
 }
 
+/* ==========================================================================
+   MINIMAL CINEMATIC UI / HIDE UI EXCEPT FISHING BUTTON
+   ========================================================================== */
+body.ui-minimal-mode .hud-top-bar,
+body.ui-minimal-mode #hud-waypoint-bar,
+body.ui-minimal-mode .controls-hint,
+body.ui-minimal-mode #interaction-prompt,
+body.ui-minimal-mode #tutorial-hud-widget,
+body.ui-minimal-mode #btn-touch-jump,
+body.ui-minimal-mode #btn-touch-interact,
+body.ui-minimal-mode #btn-touch-sprint,
+body.ui-minimal-mode #joystick-base {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* On mobile touch controls in minimal mode, allow clicking only on the fishing button */
+body.ui-minimal-mode #touch-controls {
+  pointer-events: none !important;
+}
+
+body.ui-minimal-mode .touch-action-buttons {
+  pointer-events: none !important;
+}
+
+/* Touch fishing action button remains 100% visible, glowing, and accessible */
+body.ui-minimal-mode #btn-touch-fish {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  z-index: 160 !important;
+  box-shadow: 0 0 30px rgba(0, 184, 148, 0.85), 0 0 15px #ffeaa7 !important;
+}
+
+/* In minimal mode, style desktop bottom bar cleanly around the cast button */
+body.ui-minimal-mode .hud-bottom-bar {
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+body.ui-minimal-mode #btn-cast {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  z-index: 160 !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.65), 0 0 25px rgba(243, 156, 18, 0.65) !important;
+}
+
+/* Floating Restore UI button */
+.btn-restore-ui {
+  position: fixed;
+  top: 16px;
+  right: 18px;
+  z-index: 220;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  color: #dfe6e9;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-restore-ui:hover {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border-color: #ffeaa7;
+  color: #fff;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 25px rgba(243, 156, 18, 0.6);
+}
+
+.btn-restore-ui.hidden {
+  display: none !important;
+}
+
+
 
 
 
