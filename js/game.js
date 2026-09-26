@@ -130,6 +130,11 @@ class Game {
       this.map = new window.ArchipelagoMap(this);
     }
 
+    // Interactive Onboarding Tutorial System
+    if (window.TutorialSystem) {
+      this.tutorial = new window.TutorialSystem(this);
+    }
+
     // Load saved owned rods
     const savedRods = JSON.parse(localStorage.getItem('fishing_island_owned_rods') || '["rod_willow"]');
     window.GAME_DATA.rods.forEach(r => {
@@ -237,6 +242,7 @@ class Game {
       const fState = this.fishing.state;
       if (fState === 'idle') {
         this.fishing.startChargingCast();
+        if (this.tutorial) this.tutorial.onCastStarted();
       } else if (fState === 'hook_alert') {
         this.fishing.attemptHook();
       } else if (fState === 'reeling') {
@@ -306,6 +312,7 @@ class Game {
         window.soundSystem.resume();
         if (this.fishing.state === 'idle') {
           this.fishing.startChargingCast();
+          if (this.tutorial) this.tutorial.onCastStarted();
         } else if (this.fishing.state === 'hook_alert') {
           this.fishing.attemptHook();
         } else if (this.fishing.state === 'reeling') {
@@ -751,6 +758,7 @@ class Game {
     }
     tree.lastShaken = now;
     this.sessionTreesShaken = (this.sessionTreesShaken || 0) + 1;
+    if (this.tutorial) this.tutorial.onTreeShaken();
 
     // Visual tree shake oscillation
     window.soundSystem.playTreeShake();
@@ -1264,6 +1272,7 @@ class Game {
     const modal = document.getElementById('catch-modal');
     const f = data.fish;
     this.sessionFishCaught = (this.sessionFishCaught || 0) + 1;
+    if (this.tutorial) this.tutorial.onFishCaught(f);
 
     document.getElementById('catch-name').innerText = f.name;
     document.getElementById('catch-scientific').innerText = f.scientific;

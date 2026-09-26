@@ -48,8 +48,8 @@
         <button id="audio-toggle-btn" class="btn btn-outline">
           🔊 Sound On
         </button>
-        <button id="controls-help-btn" class="btn btn-outline">
-          ❓ Guide
+        <button id="controls-help-btn" class="btn btn-outline" title="Open Interactive Tutorial & Guide">
+          🎓 Tutorial
         </button>
         <button id="hud-mode-toggle-btn" class="btn btn-outline" title="Switch between PC Mode and Mobile Mode">
           🎮 Mode: PC
@@ -445,15 +445,21 @@
   <script src="js/fish.js"></script>
   <script src="js/npc.js"></script>
   <script src="js/map.js"></script>
+  <script src="js/grass.js"></script>
   <script src="js/island.js"></script>
   <script src="js/player.js"></script>
   <script src="js/fishing.js"></script>
+  <script src="js/tutorial.js"></script>
   <script src="js/game.js"></script>
 
   <script>
-    // Help modal trigger
+    // Help & Tutorial trigger fallback
     document.getElementById('controls-help-btn').addEventListener('click', () => {
-      document.getElementById('help-modal').classList.remove('hidden');
+      if (window.game && window.game.tutorial) {
+        window.game.tutorial.openTutorialModal();
+      } else {
+        document.getElementById('help-modal').classList.remove('hidden');
+      }
     });
   </script>
 </body>

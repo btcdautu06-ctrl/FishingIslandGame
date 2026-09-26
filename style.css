@@ -2092,5 +2092,539 @@ body, html {
   }
 }
 
+/* ==========================================================================
+   INTERACTIVE ANGLER ACADEMY & TUTORIAL SYSTEM STYLES
+   ========================================================================== */
+.tutorial-hud-card {
+  position: fixed;
+  top: 74px;
+  left: 18px;
+  z-index: 120;
+  width: 310px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1.5px solid rgba(241, 196, 15, 0.55);
+  border-radius: 16px;
+  padding: 12px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(241, 196, 15, 0.2);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  user-select: none;
+}
+
+.tutorial-hud-card.hidden {
+  display: none !important;
+}
+
+.tutorial-hud-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.tutorial-mini-badge {
+  font-size: 18px;
+}
+
+.tutorial-mini-text {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffeaa7;
+  letter-spacing: 0.5px;
+}
+
+.tutorial-mini-expand {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tutorial-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tutorial-hud-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffeaa7;
+}
+
+.tutorial-step-tag {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+.tutorial-hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tutorial-help-icon, .tutorial-hud-min-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #dfe6e9;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.tutorial-help-icon:hover, .tutorial-hud-min-btn:hover {
+  background: rgba(241, 196, 15, 0.3);
+  color: #fff;
+}
+
+.tutorial-hud-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tutorial-hud-desc-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tutorial-hud-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tutorial-hud-desc {
+  font-size: 12px;
+  color: #f1f2f6;
+  line-height: 1.4;
+  margin: 0;
+  font-weight: 500;
+}
+
+.tutorial-hud-progress-bar {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tutorial-hud-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f39c12, #2ecc71);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.tutorial-claim-btn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 4px;
+  animation: pulseGold 1.5s infinite;
+}
+
+/* Tutorial HUD button badge */
+.has-tutorial-badge {
+  position: relative;
+  border-color: #f1c40f !important;
+  color: #ffeaa7 !important;
+}
+
+.has-tutorial-badge::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  background: #e74c3c;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  animation: auraPulse 1.2s infinite;
+}
+
+/* Tutorial Modal Specifics */
+.tutorial-modal-card {
+  max-width: 780px !important;
+  width: 95% !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.tutorial-tabs-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+}
+
+.tutorial-tab-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #dfe6e9;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tutorial-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tutorial-tab-btn.active {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border-color: #ffeaa7;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+}
+
+.tutorial-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.tutorial-tab-pane {
+  display: none;
+}
+
+.tutorial-tab-pane.active {
+  display: block;
+}
+
+.tutorial-platform-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(9, 132, 227, 0.2);
+  border: 1px solid rgba(9, 132, 227, 0.4);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  color: #74b9ff;
+}
+
+.controls-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.control-box {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-key {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffeaa7;
+  background: rgba(0, 0, 0, 0.35);
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  width: fit-content;
+}
+
+.control-label {
+  font-size: 12px;
+  color: #dfe6e9;
+  line-height: 1.4;
+}
+
+/* Deadly Water Banner */
+.deadly-water-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deadly-water-spotlight h3 {
+  color: #ff7675;
+  margin: 0 0 6px 0;
+  font-size: 17px;
+  letter-spacing: 0.5px;
+}
+
+.deadly-water-spotlight p {
+  color: #dfe6e9;
+  margin: 0;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.deadly-water-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.water-rule-card {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+}
+
+.water-rule-card.safe {
+  background: rgba(46, 204, 113, 0.12);
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+.water-rule-card.lethal {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: rgba(231, 76, 60, 0.45);
+}
+
+.rule-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.water-rule-card.safe .rule-badge {
+  background: #27ae60;
+  color: #fff;
+}
+
+.water-rule-card.lethal .rule-badge {
+  background: #c0392b;
+  color: #fff;
+}
+
+.water-rule-card h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.water-rule-card p {
+  font-size: 12px;
+  color: #b2bec3;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Fishing Guide 3 Steps */
+.fishing-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.fishing-step-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.fishing-step-num {
+  background: linear-gradient(135deg, #0984e3, #00cec9);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fishing-step-icon {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.fishing-step-card h4 {
+  margin: 0;
+  color: #ffeaa7;
+  font-size: 15px;
+}
+
+.fishing-step-card p {
+  margin: 0;
+  font-size: 12px;
+  color: #dfe6e9;
+  line-height: 1.5;
+}
+
+/* Features Grid */
+.feature-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.feature-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.feature-item h4 {
+  margin: 0 0 4px 0;
+  color: #ffeaa7;
+  font-size: 14px;
+}
+
+.feature-item p {
+  margin: 0;
+  font-size: 12px;
+  color: #dfe6e9;
+  line-height: 1.4;
+}
+
+/* Checklist */
+.quest-checklist-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 14px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.checklist-row.done {
+  background: rgba(46, 204, 113, 0.12);
+  border-color: rgba(46, 204, 113, 0.35);
+}
+
+.checklist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.checklist-info strong {
+  font-size: 13px;
+  color: #fff;
+}
+
+.checklist-info span {
+  font-size: 11px;
+  color: #b2bec3;
+}
+
+.checklist-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #dfe6e9;
+}
+
+.checklist-row.done .checklist-badge {
+  background: #27ae60;
+  color: #fff;
+}
+
+.quest-claim-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.reward-claimed-banner {
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid #2ecc71;
+  padding: 12px 20px;
+  border-radius: 12px;
+  color: #2ecc71;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+@media (max-width: 650px) {
+  .deadly-water-rules-grid, .fishing-guide-steps, .feature-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .tutorial-hud-card {
+    top: auto;
+    bottom: 90px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
+
 
 

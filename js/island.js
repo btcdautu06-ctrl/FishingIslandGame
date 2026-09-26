@@ -101,7 +101,7 @@ class Island {
       let h = (1 - norm) * 7.5;
       if (norm > 0.68) {
         const beachBlend = (norm - 0.68) / 0.32;
-        h = THREE.MathUtils.lerp(3.2, 0.4, beachBlend);
+        h = THREE.MathUtils.lerp(3.2, 0.65, beachBlend);
       }
       const mDist = Math.hypot(x + 35, z - 28);
       if (mDist < 35) {
@@ -119,13 +119,14 @@ class Island {
           h = Math.min(h, this.pondWaterLevel - 1.8 * depthFactor);
         } else {
           const slopeBlend = (pDist - this.pondRadius) / 7.0;
-          h = THREE.MathUtils.lerp(this.pondWaterLevel + 0.3, h, slopeBlend);
+          h = THREE.MathUtils.lerp(this.pondWaterLevel + 0.35, h, slopeBlend);
         }
       }
       maxHeight = Math.max(maxHeight, h);
     } else {
       const distPast = rMain - rMainLimit;
-      maxHeight = Math.max(maxHeight, Math.max(-14, -distPast * 0.45));
+      const slope = 0.65 - distPast * 0.9;
+      maxHeight = Math.max(maxHeight, Math.max(-14, slope));
     }
 
     // 2. TROPICAL CORAL ATOLL (East: 155, -20)
@@ -138,7 +139,7 @@ class Island {
 
     if (rCoral <= rCoralLimit) {
       const norm = rCoral / rCoralLimit;
-      let h = (1 - norm) * 4.2 + 0.5;
+      let h = (1 - norm) * 4.2 + 0.65;
       // Shallow Inner Coral Lagoon depression
       if (rCoral < 12) {
         const lagDepth = 1 - (rCoral / 12);
@@ -147,7 +148,8 @@ class Island {
       maxHeight = Math.max(maxHeight, h);
     } else {
       const distPast = rCoral - rCoralLimit;
-      maxHeight = Math.max(maxHeight, Math.max(-14, -distPast * 0.4));
+      const slope = 0.65 - distPast * 0.9;
+      maxHeight = Math.max(maxHeight, Math.max(-14, slope));
     }
 
     // 3. VOLCANIC PINE CRAGS (Northwest: -145, -60)
@@ -160,7 +162,7 @@ class Island {
 
     if (rVolc <= rVolcLimit) {
       const norm = rVolc / rVolcLimit;
-      let h = Math.pow(1 - norm, 0.8) * 13.5 + 0.5;
+      let h = Math.pow(1 - norm, 0.8) * 13.5 + 0.65;
       // Volcanic Hot Spring / Caldera Pool carving
       if (rVolc < 14) {
         if (rVolc <= 11) {
@@ -168,13 +170,14 @@ class Island {
           h = Math.min(h, this.volcanoWaterLevel - 1.5 * calDepth);
         } else {
           const rimBlend = (rVolc - 11) / 3.0;
-          h = THREE.MathUtils.lerp(this.volcanoWaterLevel + 0.4, h, rimBlend);
+          h = THREE.MathUtils.lerp(this.volcanoWaterLevel + 0.45, h, rimBlend);
         }
       }
       maxHeight = Math.max(maxHeight, h);
     } else {
       const distPast = rVolc - rVolcLimit;
-      maxHeight = Math.max(maxHeight, Math.max(-14, -distPast * 0.45));
+      const slope = 0.65 - distPast * 0.9;
+      maxHeight = Math.max(maxHeight, Math.max(-14, slope));
     }
 
     // 4. TITAN LEVIATHAN ATOLL (South: 0, 215)
@@ -187,17 +190,23 @@ class Island {
 
     if (rTitan <= rTitanLimit) {
       const norm = rTitan / rTitanLimit;
-      let h = (1 - norm) * 7.8 + 0.6;
+      let h = (1 - norm) * 7.8 + 0.70;
       // Rugged sea crags
       h += Math.sin(x * 0.3) * Math.cos(z * 0.3) * 0.8;
       maxHeight = Math.max(maxHeight, h);
     } else {
       const distPast = rTitan - rTitanLimit;
-      maxHeight = Math.max(maxHeight, Math.max(-14, -distPast * 0.45));
+      const slope = 0.70 - distPast * 0.9;
+      maxHeight = Math.max(maxHeight, Math.max(-14, slope));
     }
 
-    // Gentle micro-elevation noise
-    maxHeight += Math.sin(x * 0.2) * Math.cos(z * 0.2) * 0.35;
+    // Gentle micro-elevation noise (dampened on beaches so dry land stays strictly above water level)
+    if (maxHeight > 0.25) {
+      const noise = Math.sin(x * 0.2) * Math.cos(z * 0.2) * 0.20;
+      maxHeight = Math.max(0.42, maxHeight + noise);
+    } else {
+      maxHeight += Math.sin(x * 0.2) * Math.cos(z * 0.2) * 0.12;
+    }
     return maxHeight;
   }
 
@@ -275,6 +284,11 @@ class Island {
       this.npcSystem = new window.NPCSystem(this.scene, this);
       this.npcSystem.buildArchipelagoNPCs();
       window.npcSystem = this.npcSystem;
+    }
+
+    // Realistic 3D Instanced Grass & Wildflowers System
+    if (window.RealisticGrass) {
+      this.grass = new window.RealisticGrass(this.scene, this);
     }
   }
 
@@ -359,6 +373,13 @@ class Island {
         } else if (y < 7.5) {
           const blend = (y - 3.2) / 4.3;
           col.lerpColors(cGrassLight, cGrassLush, blend);
+          // Organic meadow variation (clover patches and dark soil undertones)
+          const grassNoise = Math.sin(x * 0.3) * Math.cos(z * 0.3);
+          if (grassNoise > 0.25) {
+            col.lerp(cGrassDeep, (grassNoise - 0.25) * 0.55);
+          } else if (grassNoise < -0.25) {
+            col.lerp(cGrassLight, (-grassNoise - 0.25) * 0.45);
+          }
         } else {
           const blend = Math.min(1.0, (y - 7.5) / 5.0);
           col.lerpColors(cGrassDeep, cRockPeak, blend);
@@ -1350,6 +1371,12 @@ class Island {
     // Talking NPCs head tracking, blinking, and gesture animations
     if (this.npcSystem && window.game && window.game.player) {
       this.npcSystem.update(delta, window.game.player.position);
+    }
+
+    // Realistic 3D Grass Wind Wave Swaying & Player Trampling
+    if (this.grass) {
+      const pPos = (window.game && window.game.player) ? window.game.player.position : null;
+      this.grass.update(delta, pPos);
     }
   }
 

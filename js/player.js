@@ -1499,17 +1499,18 @@ class Player {
   checkWaterContact(onPier, onPondDock, bridgeInfo) {
     if (this.isDead) return;
 
-    // If standing on the wooden pier, pond dock, or elevated bridge, player is safe!
+    // If standing on the wooden pier, pond dock, or elevated bridge, player is strictly safe!
     if (onPier || onPondDock || (bridgeInfo && bridgeInfo.onBridge)) return;
 
     const px = this.position.x;
     const pz = this.position.z;
+    const py = this.position.y;
 
     // 1. Freshwater Pond check (Main Island)
     const pDist = Math.hypot(px - this.island.pondCenter.x, pz - this.island.pondCenter.y);
-    if (pDist <= this.island.pondRadius) {
-      const groundY = this.island.getHeight(px, pz);
-      if (groundY <= this.island.pondWaterLevel + 0.05) {
+    if (pDist <= this.island.pondRadius - 0.2) {
+      if (py <= this.island.pondWaterLevel) {
+        this.triggerWaterDeathEffect(px, this.island.pondWaterLevel, pz);
         this.die('You fell into the freshwater pond and drowned!');
         return;
       }
@@ -1517,9 +1518,9 @@ class Player {
 
     // 2. Volcanic Geothermal Caldera check (Volcanic Island)
     const vDist = Math.hypot(px - this.island.volcanoCenter.x, pz - this.island.volcanoCenter.y);
-    if (vDist <= 11) {
-      const groundY = this.island.getHeight(px, pz);
-      if (groundY <= this.island.volcanoWaterLevel + 0.05) {
+    if (vDist <= 10.5) {
+      if (py <= this.island.volcanoWaterLevel) {
+        this.triggerWaterDeathEffect(px, this.island.volcanoWaterLevel, pz);
         this.die('You fell into the boiling volcanic sulfur pool!');
         return;
       }
@@ -1527,19 +1528,32 @@ class Player {
 
     // 3. Coral Lagoon check (Coral Atoll)
     const cDist = Math.hypot(px - this.island.coralCenter.x, pz - this.island.coralCenter.y);
-    if (cDist <= 10) {
-      const groundY = this.island.getHeight(px, pz);
-      if (groundY <= this.island.coralLagoonWaterLevel + 0.05) {
+    if (cDist <= 10.5) {
+      if (py <= this.island.coralLagoonWaterLevel) {
+        this.triggerWaterDeathEffect(px, this.island.coralLagoonWaterLevel, pz);
         this.die('You fell into the deep coral lagoon and drowned!');
         return;
       }
     }
 
-    // 4. Ocean water check (Lethal anywhere player steps off land or bridge into the sea)
-    const groundY = this.island.getHeight(px, pz);
-    if (groundY <= this.island.oceanWaterLevel + 0.05) {
-      this.die('You touched the deadly ocean waters and drowned!');
-      return;
+    // 4. Ocean water check (Lethal strictly when player's body actually touches the ocean)
+    // If airborne during a jump, player is safe until feet actually touch the water surface!
+    if (py <= this.island.oceanWaterLevel) {
+      const groundY = this.island.getHeight(px, pz);
+      if (groundY <= this.island.oceanWaterLevel + 0.05) {
+        this.triggerWaterDeathEffect(px, this.island.oceanWaterLevel, pz);
+        this.die('You touched the deadly ocean waters and drowned!');
+        return;
+      }
+    }
+  }
+
+  triggerWaterDeathEffect(x, waterY, z) {
+    if (window.soundSystem && window.soundSystem.playSplash) {
+      window.soundSystem.playSplash(true);
+    }
+    if (window.game && window.game.fishing && window.game.fishing.triggerSplash) {
+      window.game.fishing.triggerSplash(new THREE.Vector3(x, waterY, z), true);
     }
   }
 
