@@ -59,6 +59,9 @@ class Island {
     ];
 
     this.build();
+    if (window.CrabManager) {
+      this.crabManager = new CrabManager(this.scene, this);
+    }
   }
 
   // Check if coordinates (px, pz) are safely on any elevated bridge
@@ -707,50 +710,321 @@ class Island {
     shopGroup.position.set(-14, y, 22);
     shopGroup.rotation.y = 0.3;
 
-    // Wooden shack base
-    const baseGeo = new THREE.BoxGeometry(7.5, 4.0, 6.0);
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.85 });
-    const base = new THREE.Mesh(baseGeo, baseMat);
-    base.position.y = 2.0;
-    base.castShadow = true;
-    shopGroup.add(base);
+    // Materials
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 0.85 });
+    const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.65 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, roughness: 0.8 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x57606f, roughness: 0.95 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.25, metalness: 0.85 });
+    const windowGlassMat = new THREE.MeshStandardMaterial({ color: 0x81ecec, transparent: true, opacity: 0.5, roughness: 0.1 });
+    const counterMat = new THREE.MeshStandardMaterial({ color: 0xa0522d, roughness: 0.6 });
 
-    // Striped Awning
-    const roofGeo = new THREE.ConeGeometry(6.0, 2.2, 4);
-    roofGeo.rotateY(Math.PI / 4);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x1e3799, roughness: 0.6 });
-    const roof = new THREE.Mesh(roofGeo, roofMat);
-    roof.position.y = 5.1;
-    shopGroup.add(roof);
+    // 1. HARDWOOD TIMBER FLOOR
+    const floorGeo = new THREE.BoxGeometry(8.2, 0.26, 6.8);
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.position.set(0, 0.13, 0);
+    floor.receiveShadow = true;
+    shopGroup.add(floor);
 
-    // Counter
-    const counterGeo = new THREE.BoxGeometry(4.6, 1.2, 1.5);
-    const counter = new THREE.Mesh(counterGeo, new THREE.MeshStandardMaterial({ color: 0xdeb887, roughness: 0.7 }));
-    counter.position.set(0, 0.6, 3.1);
-    shopGroup.add(counter);
+    // Front Entrance Porch Deck
+    const porchGeo = new THREE.BoxGeometry(4.2, 0.26, 1.8);
+    const porch = new THREE.Mesh(porchGeo, floorMat);
+    porch.position.set(0, 0.13, 4.3);
+    porch.receiveShadow = true;
+    shopGroup.add(porch);
 
-    // Shopkeeper NPC "Captain Barnaby"
+    // Porch low entry steps leading smoothly up from ground
+    const step1 = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.14, 0.7), darkWoodMat);
+    step1.position.set(0, 0.07, 5.35);
+    shopGroup.add(step1);
+    const step2 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.08, 0.6), darkWoodMat);
+    step2.position.set(0, 0.04, 5.85);
+    shopGroup.add(step2);
+
+    // 2. WALLS WITH CENTRAL OPEN DOORWAY
+    // Back Wall
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(8.2, 3.6, 0.32), woodMat);
+    backWall.position.set(0, 1.8, -3.4);
+    backWall.castShadow = true;
+    backWall.receiveShadow = true;
+    shopGroup.add(backWall);
+
+    // Left Wall with ocean view window
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.6, 6.8), woodMat);
+    leftWall.position.set(-4.1, 1.8, 0);
+    leftWall.castShadow = true;
+    leftWall.receiveShadow = true;
+    shopGroup.add(leftWall);
+
+    // Right Wall with armory display
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.6, 6.8), woodMat);
+    rightWall.position.set(4.1, 1.8, 0);
+    rightWall.castShadow = true;
+    rightWall.receiveShadow = true;
+    shopGroup.add(rightWall);
+
+    // Front Wall: Left section
+    const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.6, 0.32), woodMat);
+    frontWallL.position.set(-2.7, 1.8, 3.4);
+    frontWallL.castShadow = true;
+    shopGroup.add(frontWallL);
+
+    // Front Wall: Right section
+    const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.6, 0.32), woodMat);
+    frontWallR.position.set(2.7, 1.8, 3.4);
+    frontWallR.castShadow = true;
+    shopGroup.add(frontWallR);
+
+    // Doorway Lintel Beam across top of door (leaves 3.0m clear walk-in height)
+    const doorLintel = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.6, 0.36), darkWoodMat);
+    doorLintel.position.set(0, 3.3, 3.4);
+    shopGroup.add(doorLintel);
+
+    // Welcoming Open Wooden Door (swung inward at 65 degrees)
+    const openDoor = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.9, 0.08), darkWoodMat);
+    openDoor.position.set(-1.15, 1.5, 3.0);
+    openDoor.rotation.y = 1.15;
+    shopGroup.add(openDoor);
+
+    // Heavy Timber Corner Posts & Door Posts
+    [-4.1, 4.1].forEach(x => {
+      [-3.4, 3.4].forEach(z => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.42, 3.8, 0.42), darkWoodMat);
+        post.position.set(x, 1.9, z);
+        shopGroup.add(post);
+      });
+    });
+
+    [-1.3, 1.3].forEach(dx => {
+      const doorPost = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.6, 0.38), darkWoodMat);
+      doorPost.position.set(dx, 1.8, 3.4);
+      shopGroup.add(doorPost);
+    });
+
+    // 3. GABLED TIMBER ROOF & RAFTERS
+    const roofL = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.22, 7.8), roofMat);
+    roofL.position.set(-2.2, 4.35, 0);
+    roofL.rotation.z = 0.45;
+    roofL.castShadow = true;
+    shopGroup.add(roofL);
+
+    const roofR = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.22, 7.8), roofMat);
+    roofR.position.set(2.2, 4.35, 0);
+    roofR.rotation.z = -0.45;
+    roofR.castShadow = true;
+    shopGroup.add(roofR);
+
+    // Front & Back Triangular Gable Peaks
+    [-3.4, 3.4].forEach(gz => {
+      const gableGeo = new THREE.ConeGeometry(4.3, 1.8, 4);
+      gableGeo.rotateY(Math.PI / 4);
+      const gable = new THREE.Mesh(gableGeo, woodMat);
+      gable.scale.set(1.0, 1.0, 0.08);
+      gable.position.set(0, 4.4, gz);
+      shopGroup.add(gable);
+    });
+
+    // Interior Ceiling Crossbeams / Trusses
+    [-1.8, 0, 1.8].forEach(tz => {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(8.0, 0.2, 0.2), darkWoodMat);
+      beam.position.set(0, 3.5, tz);
+      shopGroup.add(beam);
+    });
+
+    // 4. WINDOWS WITH WOODEN MULLION FRAMES
+    [-4.1, 4.1].forEach(wx => {
+      const win = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.4, 1.6), windowGlassMat);
+      win.position.set(wx, 2.0, 0);
+      shopGroup.add(win);
+      const winFrame = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.5, 1.7), darkWoodMat);
+      winFrame.position.set(wx, 2.0, 0);
+      winFrame.scale.set(1.02, 0.95, 0.95);
+      shopGroup.add(winFrame);
+    });
+
+    // 5. INTERIOR STONE FIREPLACE & CHIMNEY
+    const fireplaceGroup = new THREE.Group();
+    fireplaceGroup.position.set(0, 0, -3.0);
+
+    const hearth = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 0.9), stoneMat);
+    hearth.position.set(0, 0.9, 0);
+    fireplaceGroup.add(hearth);
+
+    // Firebox opening
+    const firebox = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.1, 0.6), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+    firebox.position.set(0, 0.65, 0.2);
+    fireplaceGroup.add(firebox);
+
+    // Glowing logs & fire
+    const fireLogs = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.18, 0.35), new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 }));
+    fireLogs.position.set(0, 0.2, 0.2);
+    fireplaceGroup.add(fireLogs);
+
+    const fireGlow = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.7, 6), new THREE.MeshBasicMaterial({ color: 0xff6b4a }));
+    fireGlow.position.set(0, 0.5, 0.2);
+    fireplaceGroup.add(fireGlow);
+
+    // Chimney extending through roof
+    const chimney = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4.2, 1.0), stoneMat);
+    chimney.position.set(0, 3.8, -0.1);
+    chimney.castShadow = true;
+    fireplaceGroup.add(chimney);
+
+    // Warm Fireplace Point Light casting ambient glow inside cabin
+    const fireLight = new THREE.PointLight(0xffa040, 2.2, 10.0);
+    fireLight.position.set(0, 1.2, 0.6);
+    fireplaceGroup.add(fireLight);
+
+    shopGroup.add(fireplaceGroup);
+
+    // 6. OAK SHOP COUNTER & CAPTAIN BARNABY INSIDE
+    const counterGroup = new THREE.Group();
+    counterGroup.position.set(-2.2, 0, 0.8);
+
+    const counterBase = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.1, 0.85), counterMat);
+    counterBase.position.y = 0.55;
+    counterBase.castShadow = true;
+    counterGroup.add(counterBase);
+
+    // Counter top rim
+    const counterTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 1.0), darkWoodMat);
+    counterTop.position.y = 1.12;
+    counterGroup.add(counterTop);
+
+    // Brass cash register / ledger
+    const register = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.35, 0.4), brassMat);
+    register.position.set(0.6, 1.3, 0);
+    counterGroup.add(register);
+
+    const scale = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.3, 8), brassMat);
+    scale.position.set(-0.6, 1.28, 0);
+    counterGroup.add(scale);
+
+    shopGroup.add(counterGroup);
+
+    // Shopkeeper NPC "Captain Barnaby" standing behind counter inside cabin
     const npc = this.createRealisticCaptain();
-    npc.position.set(0, 1.25, 2.0);
+    npc.position.set(-2.2, 0.14, -0.2);
     shopGroup.add(npc);
     this.captainMesh = npc;
 
-    // Signboard
-    const signGeo = new THREE.BoxGeometry(3.6, 0.9, 0.15);
-    const sign = new THREE.Mesh(signGeo, new THREE.MeshStandardMaterial({ color: 0xfff8dc, roughness: 0.8 }));
-    sign.position.set(0, 3.6, 3.1);
-    shopGroup.add(sign);
+    // 7. WALL-MOUNTED ARMORY WEAPONS RACK (Right Wall)
+    const armoryGroup = new THREE.Group();
+    armoryGroup.position.set(3.85, 1.8, 0);
+
+    // Wooden backboard
+    const armoryBoard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 2.8), darkWoodMat);
+    armoryGroup.add(armoryBoard);
+
+    // Plaque Header
+    const armoryPlaque = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.4, 2.6), brassMat);
+    armoryPlaque.position.set(0, 1.2, 0);
+    armoryGroup.add(armoryPlaque);
+
+    // Top Rack: 3D Pirate's Steel Cutlass
+    const cutlassGroup = new THREE.Group();
+    cutlassGroup.position.set(-0.12, 0.65, 0);
+    const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 1.6), new THREE.MeshStandardMaterial({ color: 0xdfe6e9, metalness: 0.9, roughness: 0.2 }));
+    swordBlade.position.z = 0.2;
+    const swordHilt = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.3, 8), brassMat);
+    swordHilt.position.z = -0.7;
+    swordHilt.rotation.x = Math.PI / 2;
+    cutlassGroup.add(swordBlade);
+    cutlassGroup.add(swordHilt);
+    armoryGroup.add(cutlassGroup);
+
+    // Middle Rack: 3D Bronze Trident Spear
+    const tridentGroup = new THREE.Group();
+    tridentGroup.position.set(-0.12, 0.05, 0);
+    const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.2, 8), darkWoodMat);
+    spearShaft.rotation.x = Math.PI / 2;
+    const tridentHead = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.45), brassMat);
+    tridentHead.position.z = 1.1;
+    tridentGroup.add(spearShaft);
+    tridentGroup.add(tridentHead);
+    armoryGroup.add(tridentGroup);
+
+    // Bottom Rack: 3D Viking Bearded Waraxe
+    const axeGroup = new THREE.Group();
+    axeGroup.position.set(-0.12, -0.55, 0);
+    const axeHaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 1.4, 8), woodMat);
+    axeHaft.rotation.x = Math.PI / 2;
+    const axeBlade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.35), new THREE.MeshStandardMaterial({ color: 0xa4b0be, metalness: 0.85, roughness: 0.3 }));
+    axeBlade.position.set(0, 0.15, 0.55);
+    axeGroup.add(axeHaft);
+    axeGroup.add(axeBlade);
+    armoryGroup.add(axeGroup);
+
+    shopGroup.add(armoryGroup);
+
+    // 8. TROPHIES & NAUTICAL DECOR
+    // Mounted Bluefin Marlin Trophy above fireplace
+    const trophyPlaque = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 0.12), darkWoodMat);
+    trophyPlaque.position.set(0, 2.65, -3.2);
+    shopGroup.add(trophyPlaque);
+
+    const trophyFish = new THREE.Mesh(new THREE.ConeGeometry(0.24, 1.8, 6), new THREE.MeshStandardMaterial({ color: 0x0984e3, metalness: 0.5, roughness: 0.3 }));
+    trophyFish.rotation.z = Math.PI / 2;
+    trophyFish.position.set(0, 2.65, -3.1);
+    shopGroup.add(trophyFish);
+
+    // Vintage Brass Ship Steering Wheel on left wall
+    const helm = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 8, 16), brassMat);
+    helm.position.set(-3.9, 2.2, -1.6);
+    helm.rotation.y = Math.PI / 2;
+    shopGroup.add(helm);
+
+    // Woven Rug on cabin floor
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.02, 2.8), new THREE.MeshStandardMaterial({ color: 0xb71540, roughness: 0.95 }));
+    rug.position.set(0, 0.27, 0);
+    shopGroup.add(rug);
+
+    // Central Warm Hanging Ceiling Lantern
+    const ceilingLantern = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28), new THREE.MeshBasicMaterial({ color: 0xffeaa7 }));
+    ceilingLantern.position.set(0, 3.1, 0);
+    shopGroup.add(ceilingLantern);
+
+    const cabinLight = new THREE.PointLight(0xffd166, 1.8, 11.0);
+    cabinLight.position.set(0, 2.9, 0);
+    shopGroup.add(cabinLight);
+
+    // 9. EXTERIOR PORCH SIGN & LANTERN
+    const signBoard = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.9, 0.15), new THREE.MeshStandardMaterial({ color: 0xfff8dc, roughness: 0.7 }));
+    signBoard.position.set(0, 3.8, 4.4);
+    shopGroup.add(signBoard);
+
+    const porchLantern = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24), new THREE.MeshBasicMaterial({ color: 0xffd166 }));
+    porchLantern.position.set(0, 3.2, 4.4);
+    shopGroup.add(porchLantern);
 
     this.scene.add(shopGroup);
 
+    // Store cabin world bounds for interior detection
+    this.cabinPos = new THREE.Vector3(-14, y, 22);
+    this.cabinRot = 0.3;
+
+    // Interactable 1: Captain Barnaby (Inside the cabin)
     this.interactables.push({
       x: -14,
-      z: 24.5,
+      z: 22,
       radius: 4.8,
       type: 'npc',
       npcId: 'barnaby',
       title: "Captain Barnaby",
       prompt: '[E] Talk to Captain Barnaby (Master Angler & Shop)'
+    });
+
+    // Interactable 2: Armory Weapons Rack (Inside the cabin)
+    const armoryWorldX = -14 + Math.cos(0.3) * 3.4;
+    const armoryWorldZ = 22 + Math.sin(0.3) * 3.4;
+    this.interactables.push({
+      x: armoryWorldX,
+      z: armoryWorldZ,
+      radius: 3.6,
+      type: 'armory',
+      title: "Captain's Armory Weapons Rack",
+      prompt: '[E] Armory Weapons Rack (Buy Swords, Spears & Axes)'
     });
   }
 
@@ -1017,17 +1291,31 @@ class Island {
   // --- 240+ TREES WITH DYNAMIC WIND SWAYING ACROSS ARCHIPELAGO ---
   createFoliageAndTrees() {
     this.treeMaterials = {
-      palmWood: new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.85 }),
-      palmLeaves: new THREE.MeshStandardMaterial({ color: 0x27ae60, roughness: 0.7, side: THREE.DoubleSide }),
+      palmWood: new THREE.MeshStandardMaterial({ color: 0x826955, roughness: 0.88 }),
+      palmWoodDark: new THREE.MeshStandardMaterial({ color: 0x5a4537, roughness: 0.92 }),
+      palmRing: new THREE.MeshStandardMaterial({ color: 0x4e3629, roughness: 0.95 }),
+      palmLeaves: new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.65, side: THREE.DoubleSide }),
+      palmLeavesLight: new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.6, side: THREE.DoubleSide }),
+      palmLeavesDry: new THREE.MeshStandardMaterial({ color: 0x9e9d24, roughness: 0.8, side: THREE.DoubleSide }),
+      palmStem: new THREE.MeshStandardMaterial({ color: 0x689f38, roughness: 0.7 }),
       coconut: new THREE.MeshStandardMaterial({ color: 0x4e342e, roughness: 0.9 }),
-      oakWood: new THREE.MeshStandardMaterial({ color: 0x4e342e, roughness: 0.9 }),
-      oakLeaves: new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 }),
+      coconutGreen: new THREE.MeshStandardMaterial({ color: 0x558b2f, roughness: 0.85 }),
+      oakWood: new THREE.MeshStandardMaterial({ color: 0x4e342e, roughness: 0.88 }),
+      oakWoodDark: new THREE.MeshStandardMaterial({ color: 0x37241e, roughness: 0.92 }),
+      oakLeaves: new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.75 }),
+      oakLeavesLight: new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 0.7 }),
+      oakLeavesDeep: new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.85 }),
       pineWood: new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 }),
-      pineLeaves: new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.85 }),
+      pineLeaves: new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.8 }),
+      pineLeavesLight: new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.75 }),
+      pineLeavesFrost: new THREE.MeshStandardMaterial({ color: 0x33691e, roughness: 0.85 }),
       willowWood: new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 }),
-      willowLeaves: new THREE.MeshStandardMaterial({ color: 0x66bb6a, roughness: 0.75 }),
-      cherryWood: new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 }),
-      cherryLeaves: new THREE.MeshStandardMaterial({ color: 0xf48fb1, roughness: 0.75 })
+      willowLeaves: new THREE.MeshStandardMaterial({ color: 0x66bb6a, roughness: 0.7, side: THREE.DoubleSide }),
+      willowLeavesDark: new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.75, side: THREE.DoubleSide }),
+      cherryWood: new THREE.MeshStandardMaterial({ color: 0x37241e, roughness: 0.9 }),
+      cherryLeaves: new THREE.MeshStandardMaterial({ color: 0xf48fb1, roughness: 0.7 }),
+      cherryLeavesDark: new THREE.MeshStandardMaterial({ color: 0xec407a, roughness: 0.75 }),
+      cherryLeavesLight: new THREE.MeshStandardMaterial({ color: 0xfce4ec, roughness: 0.65 })
     };
 
     // 1. MAIN ISLAND: Palms on Beach Perimeter (~38 palms)
@@ -1168,123 +1456,339 @@ class Island {
   buildPalmTree(group) {
     let currY = 0;
     const curveDir = Math.random() * Math.PI * 2;
-    const trunkSegments = 4;
+    const trunkSegments = 6;
     let currX = 0, currZ = 0;
 
+    // 1. Flared root base
+    const baseFlare = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.55, 0.72, 0.5, 8),
+      this.treeMaterials.palmWoodDark
+    );
+    baseFlare.position.y = 0.25;
+    group.add(baseFlare);
+    currY += 0.45;
+
+    // 2. Segmented organic curved trunk with bark ring ridges
     for (let i = 0; i < trunkSegments; i++) {
-      const segH = 1.8;
-      const rad = 0.42 - i * 0.05;
-      const segGeo = new THREE.CylinderGeometry(rad * 0.88, rad, segH, 7);
-      const seg = new THREE.Mesh(segGeo, this.treeMaterials.palmWood);
+      const segH = 1.35;
+      const radBot = 0.50 - i * 0.045;
+      const radTop = 0.46 - i * 0.045;
+      const segGeo = new THREE.CylinderGeometry(radTop, radBot, segH, 8);
+      const seg = new THREE.Mesh(segGeo, i % 2 === 0 ? this.treeMaterials.palmWood : this.treeMaterials.palmWoodDark);
       seg.position.set(currX, currY + segH / 2, currZ);
-      seg.rotation.z = Math.cos(curveDir) * 0.08 * (i + 1);
-      seg.rotation.x = Math.sin(curveDir) * 0.08 * (i + 1);
+      seg.rotation.z = Math.cos(curveDir) * 0.07 * (i + 1);
+      seg.rotation.x = Math.sin(curveDir) * 0.07 * (i + 1);
       group.add(seg);
 
+      // Bark ring collar
+      const ringGeo = new THREE.CylinderGeometry(radTop * 1.08, radTop * 1.08, 0.09, 8);
+      const ring = new THREE.Mesh(ringGeo, this.treeMaterials.palmRing);
+      ring.position.set(currX + Math.cos(curveDir) * 0.08, currY + segH, currZ + Math.sin(curveDir) * 0.08);
+      group.add(ring);
+
       currY += segH;
-      currX += Math.cos(curveDir) * 0.25;
-      currZ += Math.sin(curveDir) * 0.25;
+      currX += Math.cos(curveDir) * 0.22;
+      currZ += Math.sin(curveDir) * 0.22;
     }
 
-    const frondCount = 7;
-    for (let f = 0; f < frondCount; f++) {
-      const fAngle = (f / frondCount) * Math.PI * 2;
-      const frondGeo = new THREE.ConeGeometry(0.8, 3.4, 4);
-      frondGeo.scale(1.2, 1.0, 0.15);
-      const frond = new THREE.Mesh(frondGeo, this.treeMaterials.palmLeaves);
-      frond.position.set(currX + Math.cos(fAngle) * 1.5, currY - 0.2, currZ + Math.sin(fAngle) * 1.5);
-      frond.rotation.y = fAngle;
-      frond.rotation.x = 1.25;
-      group.add(frond);
-    }
+    // 3. Crown collar (leaf sheath junction)
+    const crownCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.28, 0.6, 8),
+      this.treeMaterials.palmStem
+    );
+    crownCollar.position.set(currX, currY + 0.3, currZ);
+    group.add(crownCollar);
+    currY += 0.5;
 
-    const cocoGeo = new THREE.SphereGeometry(0.24, 6, 6);
-    for (let c = 0; c < 3; c++) {
-      const cAngle = (c / 3) * Math.PI * 2;
-      const coco = new THREE.Mesh(cocoGeo, this.treeMaterials.coconut);
-      coco.position.set(currX + Math.cos(cAngle) * 0.35, currY - 0.35, currZ + Math.sin(cAngle) * 0.35);
+    // 4. Multi-tiered realistic arching palm fronds (11 total)
+    const frondTiers = [
+      { count: 4, elevation: 0.65, length: 3.2, width: 0.9, pitch: 0.85, mat: this.treeMaterials.palmLeavesLight },
+      { count: 7, elevation: 0.2, length: 4.1, width: 1.15, pitch: 1.35, mat: this.treeMaterials.palmLeaves },
+      { count: 2, elevation: -0.1, length: 3.5, width: 0.85, pitch: 1.65, mat: this.treeMaterials.palmLeavesDry }
+    ];
+
+    frondTiers.forEach(tier => {
+      for (let f = 0; f < tier.count; f++) {
+        const fAngle = (f / tier.count) * Math.PI * 2 + (tier.elevation * 0.8);
+        const frondGroup = new THREE.Group();
+        frondGroup.position.set(currX, currY + tier.elevation, currZ);
+        frondGroup.rotation.y = fAngle;
+
+        // Arching central stem
+        const stemGeo = new THREE.CylinderGeometry(0.04, 0.08, tier.length, 5);
+        const stem = new THREE.Mesh(stemGeo, this.treeMaterials.palmStem);
+        stem.position.set(0, tier.length * 0.42, tier.length * 0.42);
+        stem.rotation.x = tier.pitch;
+        frondGroup.add(stem);
+
+        // Segmented leaf blades along the stem
+        const bladeGeo = new THREE.ConeGeometry(tier.width, tier.length * 0.85, 4);
+        bladeGeo.scale(1.0, 1.0, 0.12);
+        const blade = new THREE.Mesh(bladeGeo, tier.mat);
+        blade.position.set(0, tier.length * 0.45, tier.length * 0.45);
+        blade.rotation.x = tier.pitch;
+        frondGroup.add(blade);
+
+        group.add(frondGroup);
+      }
+    });
+
+    // 5. Coconut clusters beneath crown
+    const cocoGeo = new THREE.SphereGeometry(0.25, 7, 7);
+    cocoGeo.scale(1.0, 1.25, 1.0);
+    const cocoCount = 5;
+    for (let c = 0; c < cocoCount; c++) {
+      const cAngle = (c / cocoCount) * Math.PI * 2 + 0.3;
+      const mat = c % 2 === 0 ? this.treeMaterials.coconut : this.treeMaterials.coconutGreen;
+      const coco = new THREE.Mesh(cocoGeo, mat);
+      coco.position.set(
+        currX + Math.cos(cAngle) * 0.42,
+        currY - 0.28,
+        currZ + Math.sin(cAngle) * 0.42
+      );
+      coco.rotation.z = (Math.random() - 0.5) * 0.4;
       group.add(coco);
     }
   }
 
   buildOakTree(group) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.75, 3.2, 8), this.treeMaterials.oakWood);
+    // 1. Root buttresses spreading into the ground
+    for (let r = 0; r < 4; r++) {
+      const rAngle = (r / 4) * Math.PI * 2 + 0.25;
+      const root = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.38, 1.2, 6),
+        this.treeMaterials.oakWoodDark
+      );
+      root.position.set(Math.cos(rAngle) * 0.65, 0.4, Math.sin(rAngle) * 0.65);
+      root.rotation.z = Math.cos(rAngle) * 0.55;
+      root.rotation.x = Math.sin(rAngle) * 0.55;
+      group.add(root);
+    }
+
+    // 2. Thick, gnarled main trunk
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.58, 0.85, 3.2, 9),
+      this.treeMaterials.oakWood
+    );
     trunk.position.y = 1.6;
     trunk.castShadow = true;
     group.add(trunk);
 
+    // 3. Thick branching boughs reaching outward into canopy
+    const branches = [
+      { x: 0.9, y: 3.2, z: 0.4, rx: 0.2, rz: -0.65, len: 2.2, rad: 0.32 },
+      { x: -0.85, y: 3.4, z: -0.4, rx: -0.2, rz: 0.68, len: 2.1, rad: 0.3 },
+      { x: 0.1, y: 3.6, z: 0.95, rx: -0.62, rz: 0.1, len: 2.0, rad: 0.28 }
+    ];
+
+    branches.forEach(b => {
+      const branch = new THREE.Mesh(
+        new THREE.CylinderGeometry(b.rad * 0.7, b.rad, b.len, 7),
+        this.treeMaterials.oakWood
+      );
+      branch.position.set(b.x * 0.5, b.y, b.z * 0.5);
+      branch.rotation.x = b.rx;
+      branch.rotation.z = b.rz;
+      group.add(branch);
+    });
+
+    // 4. Lush multi-toned canopy clouds
     const foliageCluster = [
-      { x: 0, y: 4.2, z: 0, r: 2.2 },
-      { x: 1.1, y: 3.7, z: 0.6, r: 1.6 },
-      { x: -1.0, y: 3.8, z: -0.6, r: 1.5 },
-      { x: 0.5, y: 4.6, z: -1.0, r: 1.4 },
-      { x: -0.7, y: 4.4, z: 1.0, r: 1.5 }
+      { x: 0, y: 4.8, z: 0, r: 2.4, mat: this.treeMaterials.oakLeaves },
+      { x: 1.4, y: 4.2, z: 0.6, r: 1.9, mat: this.treeMaterials.oakLeavesLight },
+      { x: -1.3, y: 4.3, z: -0.5, r: 1.85, mat: this.treeMaterials.oakLeaves },
+      { x: 0.5, y: 5.4, z: -1.1, r: 1.7, mat: this.treeMaterials.oakLeavesLight },
+      { x: -0.7, y: 5.2, z: 1.2, r: 1.75, mat: this.treeMaterials.oakLeavesDeep },
+      { x: 1.1, y: 4.8, z: -0.9, r: 1.5, mat: this.treeMaterials.oakLeavesDeep },
+      { x: -1.0, y: 3.8, z: 0.8, r: 1.6, mat: this.treeMaterials.oakLeavesLight },
+      { x: 0.2, y: 6.0, z: 0.2, r: 1.5, mat: this.treeMaterials.oakLeavesLight }
     ];
 
     foliageCluster.forEach(c => {
-      const leaf = new THREE.Mesh(new THREE.DodecahedronGeometry(c.r, 1), this.treeMaterials.oakLeaves);
+      const leafGeo = new THREE.DodecahedronGeometry(c.r, 1);
+      const leaf = new THREE.Mesh(leafGeo, c.mat);
       leaf.position.set(c.x, c.y, c.z);
+      leaf.scale.set(1.0 + Math.random() * 0.15, 0.88 + Math.random() * 0.12, 1.0 + Math.random() * 0.15);
       leaf.castShadow = true;
       group.add(leaf);
     });
   }
 
   buildPineTree(group) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 3.5, 7), this.treeMaterials.pineWood);
-    trunk.position.y = 1.75;
+    // 1. Tall tapering trunk with lower branch stubs
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.58, 4.4, 8),
+      this.treeMaterials.pineWood
+    );
+    trunk.position.y = 2.2;
     group.add(trunk);
 
+    // Dead branch stubs near base
+    for (let s = 0; s < 3; s++) {
+      const sAngle = (s / 3) * Math.PI * 2 + 0.4;
+      const stub = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.09, 0.55, 5),
+        this.treeMaterials.pineWood
+      );
+      stub.position.set(Math.cos(sAngle) * 0.35, 1.2 + s * 0.35, Math.sin(sAngle) * 0.35);
+      stub.rotation.z = Math.cos(sAngle) * 0.8;
+      stub.rotation.x = Math.sin(sAngle) * 0.8;
+      group.add(stub);
+    }
+
+    // 2. 5 tiered needle layers with drooping bough silhouette
     const tiers = [
-      { y: 3.0, r: 2.6, h: 2.2 },
-      { y: 4.4, r: 2.1, h: 2.0 },
-      { y: 5.7, r: 1.5, h: 1.8 },
-      { y: 6.9, r: 0.9, h: 1.6 }
+      { y: 2.7, r: 2.8, h: 2.1, mat: this.treeMaterials.pineLeavesFrost },
+      { y: 3.9, r: 2.3, h: 2.0, mat: this.treeMaterials.pineLeaves },
+      { y: 5.0, r: 1.8, h: 1.9, mat: this.treeMaterials.pineLeavesLight },
+      { y: 6.0, r: 1.35, h: 1.7, mat: this.treeMaterials.pineLeaves },
+      { y: 6.9, r: 0.85, h: 1.5, mat: this.treeMaterials.pineLeavesLight }
     ];
 
     tiers.forEach(t => {
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(t.r, t.h, 7), this.treeMaterials.pineLeaves);
+      // Main conical skirt
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(t.r, t.h, 8), t.mat);
       cone.position.y = t.y;
       cone.castShadow = true;
       group.add(cone);
+
+      // Drooping needle fringe clusters for organic texture
+      for (let b = 0; b < 6; b++) {
+        const bAngle = (b / 6) * Math.PI * 2;
+        const bough = new THREE.Mesh(
+          new THREE.ConeGeometry(t.r * 0.38, t.h * 0.75, 5),
+          t.mat
+        );
+        bough.position.set(
+          Math.cos(bAngle) * (t.r * 0.72),
+          t.y - t.h * 0.32,
+          Math.sin(bAngle) * (t.r * 0.72)
+        );
+        bough.rotation.x = 0.45;
+        bough.rotation.y = bAngle;
+        bough.scale.set(1.2, 0.7, 0.6);
+        group.add(bough);
+      }
     });
+
+    // Spire needle tip
+    const spire = new THREE.Mesh(
+      new THREE.ConeGeometry(0.4, 1.2, 6),
+      this.treeMaterials.pineLeavesLight
+    );
+    spire.position.y = 7.8;
+    group.add(spire);
   }
 
   buildWillowTree(group) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.8, 3.0, 7), this.treeMaterials.willowWood);
-    trunk.position.y = 1.5;
+    // 1. Twisted mossy trunk
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.55, 0.88, 3.2, 8),
+      this.treeMaterials.willowWood
+    );
+    trunk.position.y = 1.6;
+    trunk.castShadow = true;
     group.add(trunk);
 
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(2.4, 8, 6), this.treeMaterials.willowLeaves);
-    dome.scale.set(1.4, 0.85, 1.4);
-    dome.position.y = 3.6;
+    // 2. Heavy horizontal arching limbs
+    for (let l = 0; l < 4; l++) {
+      const lAngle = (l / 4) * Math.PI * 2;
+      const limb = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.38, 2.2, 6),
+        this.treeMaterials.willowWood
+      );
+      limb.position.set(Math.cos(lAngle) * 0.9, 2.7, Math.sin(lAngle) * 0.9);
+      limb.rotation.z = Math.cos(lAngle) * 0.75;
+      limb.rotation.x = Math.sin(lAngle) * 0.75;
+      group.add(limb);
+    }
+
+    // 3. Volumetric canopy crown
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(2.6, 9, 7),
+      this.treeMaterials.willowLeaves
+    );
+    dome.scale.set(1.4, 0.8, 1.4);
+    dome.position.y = 3.8;
+    dome.castShadow = true;
     group.add(dome);
 
-    const tendrilGeo = new THREE.CylinderGeometry(0.1, 0.15, 2.2, 5);
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
-      const tendril = new THREE.Mesh(tendrilGeo, this.treeMaterials.willowLeaves);
-      tendril.position.set(Math.cos(a) * 2.2, 2.2, Math.sin(a) * 2.2);
+    // 4. Cascading weeping tendrils hanging down
+    const tendrilCount = 18;
+    for (let i = 0; i < tendrilCount; i++) {
+      const a = (i / tendrilCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
+      const dist = 1.8 + Math.random() * 0.8;
+      const tLen = 2.4 + Math.random() * 1.2;
+      const tendrilGeo = new THREE.CylinderGeometry(0.06, 0.12, tLen, 5);
+      const mat = i % 2 === 0 ? this.treeMaterials.willowLeaves : this.treeMaterials.willowLeavesDark;
+      const tendril = new THREE.Mesh(tendrilGeo, mat);
+      tendril.position.set(Math.cos(a) * dist, 3.8 - tLen * 0.5, Math.sin(a) * dist);
+      tendril.rotation.z = (Math.random() - 0.5) * 0.18;
+      tendril.rotation.x = (Math.random() - 0.5) * 0.18;
       group.add(tendril);
     }
   }
 
   buildCherryTree(group) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.7, 3.2, 7), this.treeMaterials.cherryWood);
-    trunk.position.y = 1.6;
+    // 1. Elegant curved bonsai trunk
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.42, 0.72, 3.4, 8),
+      this.treeMaterials.cherryWood
+    );
+    trunk.position.y = 1.7;
+    trunk.rotation.z = 0.12;
+    trunk.castShadow = true;
     group.add(trunk);
 
+    // Sweeping branch limbs
+    const branch1 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.2, 0.32, 2.0, 6),
+      this.treeMaterials.cherryWood
+    );
+    branch1.position.set(0.7, 3.0, 0.3);
+    branch1.rotation.z = -0.65;
+    group.add(branch1);
+
+    const branch2 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.28, 1.8, 6),
+      this.treeMaterials.cherryWood
+    );
+    branch2.position.set(-0.6, 3.2, -0.4);
+    branch2.rotation.z = 0.6;
+    group.add(branch2);
+
+    // 2. Multi-tone cherry blossom clouds
     const clusters = [
-      { x: 0, y: 4.1, z: 0, r: 2.2 },
-      { x: 1.2, y: 3.8, z: 0.4, r: 1.7 },
-      { x: -1.1, y: 3.7, z: -0.5, r: 1.6 },
-      { x: 0.2, y: 4.8, z: 0.9, r: 1.5 }
+      { x: 0, y: 4.4, z: 0, r: 2.2, mat: this.treeMaterials.cherryLeaves },
+      { x: 1.4, y: 3.9, z: 0.5, r: 1.8, mat: this.treeMaterials.cherryLeavesLight },
+      { x: -1.3, y: 4.1, z: -0.6, r: 1.7, mat: this.treeMaterials.cherryLeavesDark },
+      { x: 0.4, y: 5.1, z: 0.8, r: 1.6, mat: this.treeMaterials.cherryLeavesLight },
+      { x: -0.5, y: 4.9, z: -0.8, r: 1.5, mat: this.treeMaterials.cherryLeaves },
+      { x: 1.0, y: 4.7, z: -0.7, r: 1.4, mat: this.treeMaterials.cherryLeavesDark },
+      { x: -0.9, y: 3.6, z: 0.7, r: 1.45, mat: this.treeMaterials.cherryLeavesLight }
     ];
 
     clusters.forEach(c => {
-      const blossom = new THREE.Mesh(new THREE.DodecahedronGeometry(c.r, 1), this.treeMaterials.cherryLeaves);
+      const blossomGeo = new THREE.DodecahedronGeometry(c.r, 1);
+      const blossom = new THREE.Mesh(blossomGeo, c.mat);
       blossom.position.set(c.x, c.y, c.z);
+      blossom.scale.set(1.1, 0.88, 1.1);
+      blossom.castShadow = true;
       group.add(blossom);
     });
+
+    // Fallen blossom petal scatter ring at the base
+    const petalRingGeo = new THREE.RingGeometry(0.8, 2.4, 8);
+    const petalRingMat = new THREE.MeshBasicMaterial({
+      color: 0xf8bbd0,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.55
+    });
+    const petalRing = new THREE.Mesh(petalRingGeo, petalRingMat);
+    petalRing.rotation.x = -Math.PI / 2;
+    petalRing.position.y = 0.05;
+    group.add(petalRing);
   }
 
   createDecorations() {
@@ -1377,6 +1881,12 @@ class Island {
     if (this.grass) {
       const pPos = (window.game && window.game.player) ? window.game.player.position : null;
       this.grass.update(delta, pPos);
+    }
+
+    // Beach Sand Crabs Scuttling & AI
+    if (this.crabManager) {
+      const pPos = (window.game && window.game.player) ? window.game.player.position : null;
+      this.crabManager.update(delta, pPos);
     }
   }
 

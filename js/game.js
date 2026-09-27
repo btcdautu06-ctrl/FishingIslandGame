@@ -7,6 +7,10 @@ class Game {
     this.timeOfDay = 'day'; // 'morning', 'day', 'sunset', 'night'
     this.timeCycleSeconds = 300; // 5 min full cycle or manual via campfire
 
+    // Weapons & Armory Inventory (Swords, Spears, Axes)
+    this.ownedWeapons = JSON.parse(localStorage.getItem('fishing_island_owned_weapons') || '["sword_cutlass"]');
+    this.activeWeaponId = localStorage.getItem('fishing_island_active_weapon') || 'sword_cutlass';
+
     // Load unlocked islands
     const savedUnlocked = JSON.parse(localStorage.getItem('fishing_island_unlocked_islands') || '[]');
     window.GAME_DATA.islands.forEach(isl => {
@@ -143,6 +147,11 @@ class Game {
     });
     const savedActiveRod = localStorage.getItem('fishing_island_active_rod') || 'rod_willow';
     this.player.equipRod(savedActiveRod);
+
+    // Equip saved active weapon (Swords, Spears, Axes)
+    if (this.player && this.activeWeaponId) {
+      this.player.equipWeapon(this.activeWeaponId);
+    }
   }
 
   // --- 3D INTERACTIVE FISH SHOWCASE VIEWER ---
@@ -396,6 +405,14 @@ class Game {
     this.addFastTap(document.getElementById('bait-select-btn'), () => {
       this.openBaitSelectorModal();
     });
+
+    // Quick Weapon Selector / Armory Button in HUD
+    const weaponBtn = document.getElementById('weapon-select-btn');
+    if (weaponBtn) {
+      this.addFastTap(weaponBtn, () => {
+        this.openShopModal('weapons');
+      });
+    }
 
     // Shop Button
     this.addFastTap(document.getElementById('nav-shop-btn'), () => {
@@ -847,6 +864,9 @@ class Game {
           return;
         } else if (inter.type === 'shop') {
           this.openShopModal('rods');
+          return;
+        } else if (inter.type === 'armory') {
+          this.openShopModal('weapons');
           return;
         } else if (inter.type === 'ferry_charter') {
           this.openShopModal('islands');
@@ -1343,6 +1363,95 @@ class Game {
           content.appendChild(itemRow);
         });
       }
+    } else if (tab === 'weapons') {
+      // --- ARMORY WEAPONS TAB (Swords, Spears, Axes) ---
+      const hubBanner = document.createElement('div');
+      hubBanner.className = 'island-hub-banner armory-hub-banner';
+      hubBanner.innerHTML = `
+        <div class="hub-info">
+          <strong>⚔️ Captain Barnaby's Armory & Weaponry</strong>
+          <span>Equip heavy swords, long harpoon spears, and lumberjack axes! Press [R] to strike, chop island trees for gold, or harvest beach crabs!</span>
+        </div>
+        <button class="btn btn-gold btn-armory-unequip">🎒 Unequip Weapon</button>
+      `;
+      content.appendChild(hubBanner);
+
+      const unequipBtn = hubBanner.querySelector('.btn-armory-unequip');
+      if (unequipBtn) {
+        this.addFastTap(unequipBtn, () => {
+          this.activeWeaponId = null;
+          localStorage.removeItem('fishing_island_active_weapon');
+          if (this.player) this.player.equipWeapon(null);
+          this.updateHUD();
+          this.showToast('Unequipped weapon. Holding fishing rod.', 'info');
+          this.renderShopTab('weapons');
+        });
+      }
+
+      window.GAME_DATA.weapons.forEach(w => {
+        const card = document.createElement('div');
+        const isOwned = this.ownedWeapons.includes(w.id);
+        const isEquipped = (this.activeWeaponId === w.id);
+        card.className = `shop-item-card weapon-shop-card ${isEquipped ? 'equipped-card' : ''}`;
+
+        const typeLabels = { sword: '⚔️ Sword', spear: '🔱 Spear', axe: '🪓 Axe' };
+
+        card.innerHTML = `
+          <div class="item-header">
+            <strong>${w.icon} ${w.name}</strong>
+            <span class="badge badge-purple">${typeLabels[w.type] || 'Weapon'} (Tier ${w.tier})</span>
+          </div>
+          <p class="item-desc">${w.desc}</p>
+          <div class="stats-grid weapon-stats-grid">
+            <div>Damage: <strong>${w.damage} ATK</strong></div>
+            <div>Reach: <strong>${w.reach}m Range</strong></div>
+            ${w.chopPower ? `<div>Timber Yield: <strong>+${Math.round((w.chopPower - 1) * 100)}% Gold</strong></div>` : ''}
+            <div>Special: <strong>${w.perk || 'Combat Strike'}</strong></div>
+          </div>
+          <div class="shop-action weapon-action-area">
+            <span class="price-tag">🪙 ${isOwned ? 'OWNED' : `${w.price} Gold`}</span>
+            <button class="btn btn-primary weapon-act-btn">
+              ${isEquipped ? 'Equipped' : (isOwned ? 'Equip [R]' : 'Buy Weapon')}
+            </button>
+          </div>
+        `;
+
+        const actBtn = card.querySelector('.weapon-act-btn');
+        if (actBtn) {
+          this.addFastTap(actBtn, () => {
+            if (isOwned) {
+              this.activeWeaponId = w.id;
+              localStorage.setItem('fishing_island_active_weapon', w.id);
+              if (this.player) this.player.equipWeapon(w.id);
+              if (window.soundSystem) window.soundSystem.playWeaponSwing(w.type);
+              this.showToast(`⚔️ Equipped ${w.name}! Press [R] or tap ⚔️ Attack to swing!`, 'success');
+              this.updateHUD();
+              this.renderShopTab('weapons');
+            } else {
+              if (this.gold >= w.price) {
+                this.gold -= w.price;
+                this.ownedWeapons.push(w.id);
+                this.activeWeaponId = w.id;
+                localStorage.setItem('fishing_island_owned_weapons', JSON.stringify(this.ownedWeapons));
+                localStorage.setItem('fishing_island_active_weapon', w.id);
+                localStorage.setItem('fishing_island_gold', this.gold.toString());
+                if (this.player) this.player.equipWeapon(w.id);
+                if (window.soundSystem) {
+                  window.soundSystem.playCoin();
+                  window.soundSystem.playWeaponSwing(w.type);
+                }
+                this.showToast(`⚔️ Forged & Equipped ${w.name}! Press [R] to strike!`, 'success');
+                this.updateHUD();
+                this.renderShopTab('weapons');
+              } else {
+                this.showToast(`Need 🪙 ${w.price} Gold to purchase this weapon!`, 'warning');
+              }
+            }
+          });
+        }
+
+        content.appendChild(card);
+      });
     }
   }
 
@@ -1451,6 +1560,17 @@ class Game {
 
     const activeRod = window.GAME_DATA.rods.find(r => r.id === this.player.activeRodId) || window.GAME_DATA.rods[0];
     document.getElementById('hud-active-rod-name').innerText = `${activeRod.name} (T${activeRod.tier})`;
+
+    // Active Weapon Display
+    const weaponElem = document.getElementById('hud-active-weapon-name');
+    if (weaponElem) {
+      const activeW = window.GAME_DATA.weapons ? window.GAME_DATA.weapons.find(w => w.id === this.activeWeaponId) : null;
+      if (activeW) {
+        weaponElem.innerText = `${activeW.icon} ${activeW.name}`;
+      } else {
+        weaponElem.innerText = '⚔️ Armory';
+      }
+    }
   }
 
   showToast(text, type = 'info') {

@@ -63,6 +63,11 @@ class Player {
     // High-Beam Angler Headlamp / Flashlight
     this.flashlightActive = false;
 
+    // Weapons & Armory System (Swords, Spears, Axes)
+    this.activeWeaponId = null;
+    this.isSwingingWeapon = false;
+    this.swingProgress = 0;
+
     this.createRealisticHuman();
     this.initFlashlight();
     this.setupInputs();
@@ -210,6 +215,12 @@ class Player {
     this.chest = new THREE.Group();
     this.chest.position.y = 0.38;
     this.spine.add(this.chest);
+
+    // Sheath mount on back of torso for stowed weapons
+    this.sheathMount = new THREE.Group();
+    this.sheathMount.position.set(0.18, 0.15, -0.25);
+    this.sheathMount.rotation.set(0.2, 0.1, 0.65);
+    this.chest.add(this.sheathMount);
 
     // Sculpted anatomical upper chest (broad shoulders tapering down to waist)
     const chestGeo = new THREE.CylinderGeometry(0.45, 0.35, 0.76, 12);
@@ -485,6 +496,11 @@ class Player {
     this.rodMount.position.set(0, -0.04, 0.04);
     this.rightHand.add(this.rodMount);
 
+    // Mount for weapons (Swords, Spears, Axes) attached into right hand grip
+    this.weaponMount = new THREE.Group();
+    this.weaponMount.position.set(0, -0.04, 0.04);
+    this.rightHand.add(this.weaponMount);
+
     // LEFT ARM (Crank handle reeling, balance & expressive movement)
     this.leftShoulder = new THREE.Group();
     this.leftShoulder.position.set(-0.48, 0.26, 0);
@@ -711,6 +727,264 @@ class Player {
     return worldPos;
   }
 
+  // --- WEAPONS SYSTEM: 3D MODELS FOR SWORDS, SPEARS & AXES ---
+  buildWeaponMesh(weapon) {
+    const group = new THREE.Group();
+    const type = weapon.type; // 'sword', 'spear', 'axe'
+    const color = weapon.color || 0xdfe6e9;
+    const glow = weapon.glow || 0x000000;
+    const metalMat = new THREE.MeshStandardMaterial({
+      color: color,
+      metalness: 0.85,
+      roughness: 0.25,
+      emissive: glow,
+      emissiveIntensity: glow ? 0.7 : 0
+    });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.3 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.85 });
+    const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
+    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, roughness: 0.9 });
+
+    if (type === 'sword') {
+      // Leather Grip
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.28, 8), leatherMat);
+      grip.position.y = 0.12;
+      group.add(grip);
+
+      // Pommel
+      const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), brassMat);
+      pommel.position.y = -0.02;
+      group.add(pommel);
+
+      if (weapon.id === 'sword_cutlass') {
+        // Pirate Cutlass: Curved Basket Guard & Swept Steel Blade
+        const guard = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 6, 12, Math.PI), brassMat);
+        guard.position.set(0.05, 0.12, 0);
+        guard.rotation.z = Math.PI / 2;
+        group.add(guard);
+
+        const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.06), brassMat);
+        crossguard.position.y = 0.26;
+        group.add(crossguard);
+
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.95, 0.1), metalMat);
+        blade.position.set(0.02, 0.72, 0);
+        blade.rotation.z = -0.06;
+        group.add(blade);
+
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.2, 4), metalMat);
+        tip.position.set(0.05, 1.25, 0);
+        tip.rotation.z = -0.12;
+        group.add(tip);
+      } else if (weapon.id === 'sword_titan') {
+        // Titan Abyssal Slayer: Massive Runed Greatsword
+        const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.08), brassMat);
+        crossguard.position.y = 0.28;
+        group.add(crossguard);
+
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.045, 1.35, 0.18), metalMat);
+        blade.position.y = 0.95;
+        group.add(blade);
+
+        // Glowing rune core
+        const runeCore = new THREE.Mesh(new THREE.BoxGeometry(0.055, 1.0, 0.04), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
+        runeCore.position.y = 0.95;
+        group.add(runeCore);
+
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.35, 4), metalMat);
+        tip.position.y = 1.75;
+        group.add(tip);
+      } else {
+        // Knight Claymore / Broadsword
+        const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.04, 0.06), brassMat);
+        crossguard.position.y = 0.26;
+        group.add(crossguard);
+
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.15, 0.12), metalMat);
+        blade.position.y = 0.84;
+        group.add(blade);
+
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.25, 4), metalMat);
+        tip.position.y = 1.48;
+        group.add(tip);
+      }
+    } else if (type === 'spear') {
+      const shaftLen = weapon.id === 'spear_volcanic' ? 2.2 : (weapon.id === 'spear_trident' ? 2.1 : 1.9);
+      const shaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.026, 0.03, shaftLen, 8),
+        weapon.id === 'spear_bamboo' ? new THREE.MeshStandardMaterial({ color: 0xa8c078, roughness: 0.6 }) : darkWoodMat
+      );
+      shaft.position.y = shaftLen * 0.42;
+      group.add(shaft);
+
+      [-0.1, 0.1, 0.3].forEach(gy => {
+        const wrap = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.08, 8), leatherMat);
+        wrap.position.y = shaftLen * 0.42 + gy;
+        group.add(wrap);
+      });
+
+      if (weapon.id === 'spear_trident') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.04), metalMat);
+        base.position.y = shaftLen * 0.92;
+        group.add(base);
+
+        const centerProng = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.45, 6), metalMat);
+        centerProng.position.y = shaftLen * 0.92 + 0.26;
+        group.add(centerProng);
+
+        const leftProng = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.38, 6), metalMat);
+        leftProng.position.set(-0.11, shaftLen * 0.92 + 0.22, 0);
+        leftProng.rotation.z = 0.12;
+        group.add(leftProng);
+
+        const rightProng = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.38, 6), metalMat);
+        rightProng.position.set(0.11, shaftLen * 0.92 + 0.22, 0);
+        rightProng.rotation.z = -0.12;
+        group.add(rightProng);
+      } else {
+        const spearHead = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.5, 4), metalMat);
+        spearHead.position.y = shaftLen * 0.92 + 0.25;
+        group.add(spearHead);
+
+        if (glow) {
+          const lanceLight = new THREE.PointLight(glow, 1.2, 3.5);
+          lanceLight.position.y = shaftLen * 0.92 + 0.25;
+          group.add(lanceLight);
+        }
+      }
+    } else if (type === 'axe') {
+      const haftLen = weapon.id === 'axe_colossal' ? 1.6 : 1.2;
+      const haft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, haftLen, 8), woodMat);
+      haft.position.y = haftLen * 0.35;
+      group.add(haft);
+
+      if (weapon.id === 'axe_colossal') {
+        [-1, 1].forEach(side => {
+          const blade = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.42, 0.04), metalMat);
+          blade.position.set(side * 0.22, haftLen * 0.72, 0);
+          blade.rotation.z = side * 0.15;
+          group.add(blade);
+        });
+
+        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8), brassMat);
+        socket.position.y = haftLen * 0.72;
+        group.add(socket);
+      } else if (weapon.id === 'axe_bearded') {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.38, 0.035), metalMat);
+        blade.position.set(0.16, haftLen * 0.68, 0);
+        blade.rotation.z = -0.25;
+        group.add(blade);
+
+        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.24, 8), metalMat);
+        socket.position.y = haftLen * 0.72;
+        group.add(socket);
+      } else {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.24, 0.03), metalMat);
+        blade.position.set(0.14, haftLen * 0.7, 0);
+        blade.rotation.z = -0.18;
+        group.add(blade);
+
+        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.2, 8), brassMat);
+        socket.position.y = haftLen * 0.7;
+        group.add(socket);
+      }
+    }
+
+    return group;
+  }
+
+  equipWeapon(weaponId) {
+    this.activeWeaponId = weaponId;
+
+    while (this.weaponMount && this.weaponMount.children.length > 0) {
+      this.weaponMount.remove(this.weaponMount.children[0]);
+    }
+    while (this.sheathMount && this.sheathMount.children.length > 0) {
+      this.sheathMount.remove(this.sheathMount.children[0]);
+    }
+
+    if (!weaponId || weaponId === 'none') {
+      if (this.rodMount) this.rodMount.visible = true;
+      return;
+    }
+
+    const weaponData = (window.GAME_DATA.weapons && window.GAME_DATA.weapons.find(w => w.id === weaponId));
+    if (!weaponData) return;
+
+    const heldMesh = this.buildWeaponMesh(weaponData);
+    heldMesh.rotation.x = -Math.PI / 2.8;
+    this.weaponMount.add(heldMesh);
+
+    const sheathMesh = this.buildWeaponMesh(weaponData);
+    sheathMesh.rotation.x = Math.PI;
+    this.sheathMount.add(sheathMesh);
+
+    const isFishing = window.game && window.game.fishing && window.game.fishing.state !== 'idle';
+    if (isFishing) {
+      this.weaponMount.visible = false;
+      this.sheathMount.visible = true;
+      if (this.rodMount) this.rodMount.visible = true;
+    } else {
+      this.weaponMount.visible = true;
+      this.sheathMount.visible = false;
+      if (this.rodMount) this.rodMount.visible = false;
+    }
+  }
+
+  swingWeapon() {
+    if (this.isDead || this.isSwingingWeapon) return;
+    const isFishing = window.game && window.game.fishing && window.game.fishing.state !== 'idle';
+    if (isFishing) return;
+
+    this.isSwingingWeapon = true;
+    this.swingProgress = 0;
+
+    const weaponData = window.GAME_DATA.weapons ? window.GAME_DATA.weapons.find(w => w.id === this.activeWeaponId) : null;
+    const wType = weaponData ? weaponData.type : 'sword';
+
+    if (window.soundSystem && window.soundSystem.playWeaponSwing) {
+      window.soundSystem.playWeaponSwing(wType);
+    }
+
+    const reach = weaponData ? weaponData.reach : 2.5;
+
+    // Check tree chopping / harvesting
+    if (this.island) {
+      const tree = this.island.getNearestTree(this.position.x, this.position.z, reach + 1.2);
+      if (tree) {
+        tree.mesh.rotation.z += (Math.random() > 0.5 ? 0.22 : -0.22);
+        tree.lastShaken = Date.now();
+
+        if (wType === 'axe') {
+          if (window.soundSystem && window.soundSystem.playChop) window.soundSystem.playChop();
+          const chopMult = weaponData ? weaponData.chopPower : 1.2;
+          const timberGold = Math.floor(chopMult * 18) + Math.floor(Math.random() * 10);
+          if (window.game) {
+            window.game.gold += timberGold;
+            window.game.updateHUD();
+            window.game.showToast(`🪵 Chopped timber with ${weaponData.name}! +${timberGold} Gold`, 'success');
+          }
+        } else {
+          if (window.soundSystem && window.soundSystem.playChop) window.soundSystem.playChop();
+          if (window.game) {
+            window.game.showToast(`⚔️ Struck tree with ${weaponData ? weaponData.name : 'Weapon'}!`, 'info');
+          }
+        }
+      }
+
+      // Check beach crab harvesting
+      if (this.island.crabManager) {
+        const crab = this.island.crabManager.getNearestCrab(this.position.x, this.position.z, reach + 1.4);
+        if (crab) {
+          this.island.crabManager.catchCrab(crab.id);
+          if (window.game) {
+            window.game.showToast(`⚔️ Harvested Shore Crab with ${weaponData ? weaponData.name : 'Weapon'}!`, 'success');
+          }
+        }
+      }
+    }
+  }
+
   initFlashlight() {
     // High-Beam Angler LED Headlamp (Mounted on cap visor, illuminates up to 60 meters)
     this.flashlight = new THREE.SpotLight(0xfff7e6, 3.2, 60, Math.PI / 4.2, 0.35, 1.2);
@@ -813,6 +1087,11 @@ class Player {
       // Angler Flashlight / Headlamp: [F]
       if (code === 'KeyF') {
         this.toggleFlashlight();
+      }
+
+      // Attack / Swing Weapon / Chop Trees: [R]
+      if (code === 'KeyR') {
+        this.swingWeapon();
       }
     });
 
@@ -1077,6 +1356,27 @@ class Player {
       });
     }
 
+    // Touch Attack / Weapon Swing Button (Mobile)
+    const btnAttack = document.getElementById('btn-touch-attack');
+    if (btnAttack) {
+      let attackHandled = false;
+      const handleTouchAttack = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.swingWeapon();
+      };
+      btnAttack.addEventListener('touchstart', (e) => {
+        attackHandled = true;
+        handleTouchAttack(e);
+      }, { passive: false });
+      btnAttack.addEventListener('click', (e) => {
+        if (attackHandled) { attackHandled = false; return; }
+        handleTouchAttack(e);
+      });
+    }
+
     // Click on interaction prompt banner
     const promptElem = document.getElementById('interaction-prompt');
     if (promptElem) {
@@ -1139,7 +1439,7 @@ class Player {
       }
     }
 
-    // 2. Captain Barnaby's Tackle Shack & Front Counter
+    // 2. Captain Barnaby's Walk-in Cabin Interior & Front Porch
     // Shack center: (-14, 22), rotated by 0.3 rad
     const shopX = -14;
     const shopZ = 22;
@@ -1151,30 +1451,73 @@ class Player {
     let locX = relX * cosR - relZ * sinR;
     let locZ = relX * sinR + relZ * cosR;
 
-    // AABB 1: Shack main building (Width 7.5 -> half 3.75, Depth 6.0 -> half 3.0)
-    const shackHalfW = 3.75 + playerRadius;
-    const shackHalfD = 3.0 + playerRadius;
-    if (Math.abs(locX) < shackHalfW && Math.abs(locZ) < shackHalfD) {
-      const overlapX = shackHalfW - Math.abs(locX);
-      const overlapZ = shackHalfD - Math.abs(locZ);
-      if (overlapX < overlapZ) {
-        locX = Math.sign(locX) * shackHalfW;
-      } else {
-        locZ = Math.sign(locZ) * shackHalfD;
-      }
-    }
+    // Check if player is near cabin
+    if (Math.abs(locX) <= 5.2 && locZ >= -4.5 && locZ <= 7.0) {
+      const isInside = (Math.abs(locX) < 3.95 && locZ > -3.25 && locZ < 3.25);
+      const isDoorway = (Math.abs(locX) <= 1.15 && locZ >= 2.9 && locZ <= 3.8);
 
-    // AABB 2: Front Shop Counter (Width 4.6 -> half 2.3, Depth 1.5 -> half 0.75 at Z = 3.1)
-    const countHalfW = 2.3 + playerRadius;
-    const countZMin = (3.1 - 0.75) - playerRadius;
-    const countZMax = (3.1 + 0.75) + playerRadius;
-    if (Math.abs(locX) < countHalfW && locZ >= countZMin && locZ <= countZMax) {
-      const overlapX = countHalfW - Math.abs(locX);
-      const overlapZ = Math.min(Math.abs(locZ - countZMin), Math.abs(locZ - countZMax));
-      if (overlapX < overlapZ) {
-        locX = Math.sign(locX) * countHalfW;
-      } else {
-        locZ = (locZ < (countZMin + countZMax) / 2) ? countZMin : countZMax;
+      if (isInside) {
+        // Player is inside: keep within interior walls
+        const minX = -3.95 + playerRadius;
+        const maxX = 3.95 - playerRadius;
+        const minZ = -3.25 + playerRadius;
+        const maxZ = 3.25;
+
+        if (locX < minX) locX = minX;
+        if (locX > maxX) locX = maxX;
+        if (locZ < minZ) locZ = minZ;
+
+        // Front wall blocks unless exiting through doorway
+        if (locZ > maxZ - playerRadius && Math.abs(locX) > 1.15) {
+          locZ = maxZ - playerRadius;
+        }
+
+        // Fireplace hearth collision inside: centered at (0, -3.0), width 2.4 (half 1.2), depth 0.9
+        const fpMinX = -1.2 - playerRadius;
+        const fpMaxX = 1.2 + playerRadius;
+        const fpFrontZ = -2.55 + playerRadius;
+        if (locX >= fpMinX && locX <= fpMaxX && locZ <= fpFrontZ) {
+          locZ = fpFrontZ;
+        }
+
+        // Shop Counter collision inside: centered at (-2.2, 0.8), width 2.4 (half 1.2), depth 1.0 (half 0.5)
+        const cMinX = -2.2 - 1.2 - playerRadius;
+        const cMaxX = -2.2 + 1.2 + playerRadius;
+        const cMinZ = 0.8 - 0.5 - playerRadius;
+        const cMaxZ = 0.8 + 0.5 + playerRadius;
+        if (locX >= cMinX && locX <= cMaxX && locZ >= cMinZ && locZ <= cMaxZ) {
+          const oLeft = Math.abs(locX - cMinX);
+          const oRight = Math.abs(cMaxX - locX);
+          const oBack = Math.abs(locZ - cMinZ);
+          const oFront = Math.abs(cMaxZ - locZ);
+          const minO = Math.min(oLeft, oRight, oBack, oFront);
+          if (minO === oLeft) locX = cMinX;
+          else if (minO === oRight) locX = cMaxX;
+          else if (minO === oBack) locZ = cMinZ;
+          else locZ = cMaxZ;
+        }
+      } else if (!isDoorway) {
+        // Player is outside: push away from exterior walls
+        const wallHalfW = 4.25 + playerRadius;
+        const wallBackZ = -3.55 - playerRadius;
+        const wallFrontZ = 3.55 + playerRadius;
+
+        // Left wall push
+        if (locX < 0 && locX > -wallHalfW && locZ >= -3.55 && locZ <= 3.55) {
+          locX = -wallHalfW;
+        }
+        // Right wall push
+        if (locX > 0 && locX < wallHalfW && locZ >= -3.55 && locZ <= 3.55) {
+          locX = wallHalfW;
+        }
+        // Back wall push
+        if (Math.abs(locX) <= wallHalfW && locZ < -3.25 && locZ > wallBackZ) {
+          locZ = wallBackZ;
+        }
+        // Front wall push (left and right of open door)
+        if (Math.abs(locX) > 1.15 && Math.abs(locX) <= wallHalfW && locZ > 3.25 && locZ < wallFrontZ) {
+          locZ = wallFrontZ;
+        }
       }
     }
 
@@ -1426,7 +1769,20 @@ class Player {
       this.rightShoulder.rotation.x = -0.45 - legPhase * (sprint ? 0.25 : 0.12);
       this.rightElbow.rotation.x = -0.35;
 
-      // Accurate pier & bridge bounds check
+      // Accurate cabin, pier & bridge bounds check
+      const shopX = -14;
+      const shopZ = 22;
+      const shopRot = 0.3;
+      const cabinRelX = this.position.x - shopX;
+      const cabinRelZ = this.position.z - shopZ;
+      const cabinLocX = cabinRelX * Math.cos(-shopRot) - cabinRelZ * Math.sin(-shopRot);
+      const cabinLocZ = cabinRelX * Math.sin(-shopRot) + cabinRelZ * Math.cos(-shopRot);
+      const cabinBaseY = this.island ? this.island.getHeight(shopX, shopZ) : 0;
+
+      const isInsideCabin = (Math.abs(cabinLocX) <= 4.0 && cabinLocZ >= -3.3 && cabinLocZ <= 3.35);
+      const isOnPorch = (Math.abs(cabinLocX) <= 2.6 && cabinLocZ > 3.35 && cabinLocZ <= 5.2);
+      const isOnSteps = (Math.abs(cabinLocX) <= 2.2 && cabinLocZ > 5.2 && cabinLocZ <= 6.2);
+
       const onPierWalk = (this.position.z >= 74.5 && this.position.z <= 113 && Math.abs(this.position.x) <= 2.5);
       const onPierHead = (this.position.z >= 113 && this.position.z <= 122 && Math.abs(this.position.x) <= 8.2);
       const onPondDock = (this.position.z >= -9.5 && this.position.z <= -1.8 && Math.abs(this.position.x - 14) <= 2.2);
@@ -1439,7 +1795,7 @@ class Player {
         this.stepCount = (this.stepCount || 0) + 1;
         const isRightFoot = (this.stepCount % 2 === 0);
 
-        const surface = (onPierWalk || onPierHead || onPondDock || onBridge) ? 'wood' : 'sand';
+        const surface = (onPierWalk || onPierHead || onPondDock || onBridge || isInsideCabin || isOnPorch || isOnSteps) ? 'wood' : 'sand';
         if (this.isGrounded && window.soundSystem) window.soundSystem.playFootstep(surface);
 
         // Dynamic Sand Displacement & Particles: Footprint decals, sand grain spray & dust puffs
@@ -1471,7 +1827,20 @@ class Player {
       this.leftElbow.rotation.x *= 0.85;
     }
 
-    // Precise Pier, Dock & Bridge Elevation
+    // Precise Cabin, Pier, Dock & Bridge Elevation
+    const shopX = -14;
+    const shopZ = 22;
+    const shopRot = 0.3;
+    const cabinRelX = this.position.x - shopX;
+    const cabinRelZ = this.position.z - shopZ;
+    const cabinLocX = cabinRelX * Math.cos(-shopRot) - cabinRelZ * Math.sin(-shopRot);
+    const cabinLocZ = cabinRelX * Math.sin(-shopRot) + cabinRelZ * Math.cos(-shopRot);
+    const cabinBaseY = this.island ? this.island.getHeight(shopX, shopZ) : 0;
+
+    const isInsideCabin = (Math.abs(cabinLocX) <= 4.0 && cabinLocZ >= -3.3 && cabinLocZ <= 3.35);
+    const isOnPorch = (Math.abs(cabinLocX) <= 2.6 && cabinLocZ > 3.35 && cabinLocZ <= 5.2);
+    const isOnSteps = (Math.abs(cabinLocX) <= 2.2 && cabinLocZ > 5.2 && cabinLocZ <= 6.2);
+
     const onPierWalk = (this.position.z >= 74.5 && this.position.z <= 113 && Math.abs(this.position.x) <= 2.5);
     const onPierHead = (this.position.z >= 113 && this.position.z <= 122 && Math.abs(this.position.x) <= 8.2);
     const onPier = onPierWalk || onPierHead;
@@ -1485,10 +1854,65 @@ class Player {
       groundTargetY = 1.4; // Elevated safely above ocean water
     } else if (onPondDock) {
       groundTargetY = this.island.pondWaterLevel + 0.15; // Elevated safely above pond water
+    } else if (isInsideCabin) {
+      groundTargetY = cabinBaseY + 0.26; // Standing on hardwood cabin floor!
+    } else if (isOnPorch) {
+      groundTargetY = cabinBaseY + 0.18; // Standing on wooden porch!
+    } else if (isOnSteps) {
+      groundTargetY = cabinBaseY + 0.09; // Stepping up porch stairs!
     } else if (this.isGrounded && this.isMoving && this.island.sandPhysics && this.island.sandPhysics.isSand(this.position.x, this.position.z, groundTargetY)) {
       // Natural soft sand compression under the boot step
       const sandSink = Math.abs(Math.sin(this.walkCycle)) * 0.038;
       groundTargetY -= sandSink;
+    }
+
+    // Weapons & Rod Hand Positioning vs Back Sheathing
+    if (this.activeWeaponId) {
+      if (isFishingActive) {
+        if (this.weaponMount) this.weaponMount.visible = false;
+        if (this.sheathMount) this.sheathMount.visible = true;
+        if (this.rodMount) this.rodMount.visible = true;
+      } else {
+        if (this.weaponMount) this.weaponMount.visible = true;
+        if (this.sheathMount) this.sheathMount.visible = false;
+        if (this.rodMount) this.rodMount.visible = false;
+      }
+    } else {
+      if (this.weaponMount) this.weaponMount.visible = false;
+      if (this.sheathMount) this.sheathMount.visible = false;
+      if (this.rodMount) this.rodMount.visible = true;
+    }
+
+    // Dynamic Athletic Weapon Slash Animation
+    if (this.isSwingingWeapon) {
+      this.swingProgress += delta * 4.4;
+      const p = this.swingProgress;
+      if (p < 0.28) {
+        // Wind-up: pull arm back and raise weapon high
+        const t = p / 0.28;
+        this.rightShoulder.rotation.x = -0.45 - t * 1.35;
+        this.rightShoulder.rotation.z = -t * 0.45;
+        this.rightElbow.rotation.x = -t * 0.9;
+        this.spine.rotation.y = t * 0.25;
+      } else if (p < 0.68) {
+        // Downward forward athletic slash
+        const t = (p - 0.28) / 0.40;
+        this.rightShoulder.rotation.x = -1.8 + t * 2.6;
+        this.rightShoulder.rotation.y = -t * 0.65;
+        this.rightShoulder.rotation.z = -0.45 + t * 0.85;
+        this.rightElbow.rotation.x = -0.9 + t * 0.7;
+        this.spine.rotation.y = 0.25 - t * 0.5;
+      } else if (p < 1.0) {
+        // Recovery smoothly back to stance
+        const t = (p - 0.68) / 0.32;
+        this.rightShoulder.rotation.x = 0.8 - t * 1.25;
+        this.rightShoulder.rotation.y = -0.65 * (1 - t);
+        this.rightShoulder.rotation.z = 0.4 * (1 - t);
+        this.spine.rotation.y = -0.25 * (1 - t);
+      } else {
+        this.isSwingingWeapon = false;
+        this.swingProgress = 0;
+      }
     }
 
     if (this.jumpCooldown > 0) this.jumpCooldown -= delta;
@@ -1504,7 +1928,7 @@ class Player {
         this.velocityY = 0;
         this.isGrounded = true;
 
-        const surface = (onPier || onPondDock || bridgeInfo) ? 'wood' : 'sand';
+        const surface = (onPier || onPondDock || bridgeInfo || isInsideCabin || isOnPorch || isOnSteps) ? 'wood' : 'sand';
         if (window.soundSystem && window.soundSystem.playLandSound) {
           window.soundSystem.playLandSound(surface);
         }
@@ -1529,16 +1953,16 @@ class Player {
     this.mesh.rotation.y = this.rotation;
 
     // Check if player touched water -> DIE!
-    this.checkWaterContact(onPier, onPondDock, bridgeInfo);
+    this.checkWaterContact(onPier, onPondDock, bridgeInfo, isInsideCabin, isOnPorch, isOnSteps);
 
     this.updateCamera();
   }
 
-  checkWaterContact(onPier, onPondDock, bridgeInfo) {
+  checkWaterContact(onPier, onPondDock, bridgeInfo, isInsideCabin = false, isOnPorch = false, isOnSteps = false) {
     if (this.isDead) return;
 
-    // If standing on the wooden pier, pond dock, or elevated bridge, player is strictly safe!
-    if (onPier || onPondDock || (bridgeInfo && bridgeInfo.onBridge)) return;
+    // If standing on the wooden pier, pond dock, elevated bridge, or inside/porch of cabin, player is strictly safe!
+    if (onPier || onPondDock || (bridgeInfo && bridgeInfo.onBridge) || isInsideCabin || isOnPorch || isOnSteps) return;
 
     const px = this.position.x;
     const pz = this.position.z;
