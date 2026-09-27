@@ -757,7 +757,7 @@ class Island {
     leftWall.receiveShadow = true;
     shopGroup.add(leftWall);
 
-    // Right Wall with armory display
+    // Right Wall with tackle rack display
     const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.6, 6.8), woodMat);
     rightWall.position.set(4.1, 1.8, 0);
     rightWall.castShadow = true;
@@ -909,54 +909,22 @@ class Island {
     shopGroup.add(npc);
     this.captainMesh = npc;
 
-    // 7. WALL-MOUNTED ARMORY WEAPONS RACK (Right Wall)
-    const armoryGroup = new THREE.Group();
-    armoryGroup.position.set(3.85, 1.8, 0);
+    // 7. WALL-MOUNTED FISHING ROD DISPLAY RACK (Right Wall)
+    const tackleRack = new THREE.Group();
+    tackleRack.position.set(3.85, 1.8, 0);
 
-    // Wooden backboard
-    const armoryBoard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 2.8), darkWoodMat);
-    armoryGroup.add(armoryBoard);
+    const rackBoard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.0, 2.8), darkWoodMat);
+    tackleRack.add(rackBoard);
 
-    // Plaque Header
-    const armoryPlaque = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.4, 2.6), brassMat);
-    armoryPlaque.position.set(0, 1.2, 0);
-    armoryGroup.add(armoryPlaque);
+    // Display fishing rods on wall rack
+    [-0.5, 0, 0.5].forEach(ry => {
+      const rodDisplay = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.038, 2.4, 8), new THREE.MeshStandardMaterial({ color: 0x825a2c, roughness: 0.6 }));
+      rodDisplay.position.set(-0.1, ry, 0);
+      rodDisplay.rotation.x = Math.PI / 2;
+      tackleRack.add(rodDisplay);
+    });
 
-    // Top Rack: 3D Pirate's Steel Cutlass
-    const cutlassGroup = new THREE.Group();
-    cutlassGroup.position.set(-0.12, 0.65, 0);
-    const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 1.6), new THREE.MeshStandardMaterial({ color: 0xdfe6e9, metalness: 0.9, roughness: 0.2 }));
-    swordBlade.position.z = 0.2;
-    const swordHilt = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.3, 8), brassMat);
-    swordHilt.position.z = -0.7;
-    swordHilt.rotation.x = Math.PI / 2;
-    cutlassGroup.add(swordBlade);
-    cutlassGroup.add(swordHilt);
-    armoryGroup.add(cutlassGroup);
-
-    // Middle Rack: 3D Bronze Trident Spear
-    const tridentGroup = new THREE.Group();
-    tridentGroup.position.set(-0.12, 0.05, 0);
-    const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.2, 8), darkWoodMat);
-    spearShaft.rotation.x = Math.PI / 2;
-    const tridentHead = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.45), brassMat);
-    tridentHead.position.z = 1.1;
-    tridentGroup.add(spearShaft);
-    tridentGroup.add(tridentHead);
-    armoryGroup.add(tridentGroup);
-
-    // Bottom Rack: 3D Viking Bearded Waraxe
-    const axeGroup = new THREE.Group();
-    axeGroup.position.set(-0.12, -0.55, 0);
-    const axeHaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 1.4, 8), woodMat);
-    axeHaft.rotation.x = Math.PI / 2;
-    const axeBlade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.35), new THREE.MeshStandardMaterial({ color: 0xa4b0be, metalness: 0.85, roughness: 0.3 }));
-    axeBlade.position.set(0, 0.15, 0.55);
-    axeGroup.add(axeHaft);
-    axeGroup.add(axeBlade);
-    armoryGroup.add(axeGroup);
-
-    shopGroup.add(armoryGroup);
+    shopGroup.add(tackleRack);
 
     // 8. TROPHIES & NAUTICAL DECOR
     // Mounted Bluefin Marlin Trophy above fireplace
@@ -1013,18 +981,6 @@ class Island {
       npcId: 'barnaby',
       title: "Captain Barnaby",
       prompt: '[E] Talk to Captain Barnaby (Master Angler & Shop)'
-    });
-
-    // Interactable 2: Armory Weapons Rack (Inside the cabin)
-    const armoryWorldX = -14 + Math.cos(0.3) * 3.4;
-    const armoryWorldZ = 22 + Math.sin(0.3) * 3.4;
-    this.interactables.push({
-      x: armoryWorldX,
-      z: armoryWorldZ,
-      radius: 3.6,
-      type: 'armory',
-      title: "Captain's Armory Weapons Rack",
-      prompt: '[E] Armory Weapons Rack (Buy Swords, Spears & Axes)'
     });
   }
 

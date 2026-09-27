@@ -63,11 +63,6 @@ class Player {
     // High-Beam Angler Headlamp / Flashlight
     this.flashlightActive = false;
 
-    // Weapons & Armory System (Swords, Spears, Axes)
-    this.activeWeaponId = null;
-    this.isSwingingWeapon = false;
-    this.swingProgress = 0;
-
     this.createRealisticHuman();
     this.initFlashlight();
     this.setupInputs();
@@ -215,12 +210,6 @@ class Player {
     this.chest = new THREE.Group();
     this.chest.position.y = 0.38;
     this.spine.add(this.chest);
-
-    // Sheath mount on back of torso for stowed weapons
-    this.sheathMount = new THREE.Group();
-    this.sheathMount.position.set(0.18, 0.15, -0.25);
-    this.sheathMount.rotation.set(0.2, 0.1, 0.65);
-    this.chest.add(this.sheathMount);
 
     // Sculpted anatomical upper chest (broad shoulders tapering down to waist)
     const chestGeo = new THREE.CylinderGeometry(0.45, 0.35, 0.76, 12);
@@ -496,11 +485,6 @@ class Player {
     this.rodMount.position.set(0, -0.04, 0.04);
     this.rightHand.add(this.rodMount);
 
-    // Mount for weapons (Swords, Spears, Axes) attached into right hand grip
-    this.weaponMount = new THREE.Group();
-    this.weaponMount.position.set(0, -0.04, 0.04);
-    this.rightHand.add(this.weaponMount);
-
     // LEFT ARM (Crank handle reeling, balance & expressive movement)
     this.leftShoulder = new THREE.Group();
     this.leftShoulder.position.set(-0.48, 0.26, 0);
@@ -727,263 +711,6 @@ class Player {
     return worldPos;
   }
 
-  // --- WEAPONS SYSTEM: 3D MODELS FOR SWORDS, SPEARS & AXES ---
-  buildWeaponMesh(weapon) {
-    const group = new THREE.Group();
-    const type = weapon.type; // 'sword', 'spear', 'axe'
-    const color = weapon.color || 0xdfe6e9;
-    const glow = weapon.glow || 0x000000;
-    const metalMat = new THREE.MeshStandardMaterial({
-      color: color,
-      metalness: 0.85,
-      roughness: 0.25,
-      emissive: glow,
-      emissiveIntensity: glow ? 0.7 : 0
-    });
-    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.3 });
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.85 });
-    const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
-    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, roughness: 0.9 });
-
-    if (type === 'sword') {
-      // Leather Grip
-      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.28, 8), leatherMat);
-      grip.position.y = 0.12;
-      group.add(grip);
-
-      // Pommel
-      const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), brassMat);
-      pommel.position.y = -0.02;
-      group.add(pommel);
-
-      if (weapon.id === 'sword_cutlass') {
-        // Pirate Cutlass: Curved Basket Guard & Swept Steel Blade
-        const guard = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.018, 6, 12, Math.PI), brassMat);
-        guard.position.set(0.05, 0.12, 0);
-        guard.rotation.z = Math.PI / 2;
-        group.add(guard);
-
-        const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.06), brassMat);
-        crossguard.position.y = 0.26;
-        group.add(crossguard);
-
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.95, 0.1), metalMat);
-        blade.position.set(0.02, 0.72, 0);
-        blade.rotation.z = -0.06;
-        group.add(blade);
-
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.2, 4), metalMat);
-        tip.position.set(0.05, 1.25, 0);
-        tip.rotation.z = -0.12;
-        group.add(tip);
-      } else if (weapon.id === 'sword_titan') {
-        // Titan Abyssal Slayer: Massive Runed Greatsword
-        const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.08), brassMat);
-        crossguard.position.y = 0.28;
-        group.add(crossguard);
-
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.045, 1.35, 0.18), metalMat);
-        blade.position.y = 0.95;
-        group.add(blade);
-
-        // Glowing rune core
-        const runeCore = new THREE.Mesh(new THREE.BoxGeometry(0.055, 1.0, 0.04), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
-        runeCore.position.y = 0.95;
-        group.add(runeCore);
-
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.35, 4), metalMat);
-        tip.position.y = 1.75;
-        group.add(tip);
-      } else {
-        // Knight Claymore / Broadsword
-        const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.04, 0.06), brassMat);
-        crossguard.position.y = 0.26;
-        group.add(crossguard);
-
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.15, 0.12), metalMat);
-        blade.position.y = 0.84;
-        group.add(blade);
-
-        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.25, 4), metalMat);
-        tip.position.y = 1.48;
-        group.add(tip);
-      }
-    } else if (type === 'spear') {
-      const shaftLen = weapon.id === 'spear_volcanic' ? 2.2 : (weapon.id === 'spear_trident' ? 2.1 : 1.9);
-      const shaft = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.026, 0.03, shaftLen, 8),
-        weapon.id === 'spear_bamboo' ? new THREE.MeshStandardMaterial({ color: 0xa8c078, roughness: 0.6 }) : darkWoodMat
-      );
-      shaft.position.y = shaftLen * 0.42;
-      group.add(shaft);
-
-      [-0.1, 0.1, 0.3].forEach(gy => {
-        const wrap = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.08, 8), leatherMat);
-        wrap.position.y = shaftLen * 0.42 + gy;
-        group.add(wrap);
-      });
-
-      if (weapon.id === 'spear_trident') {
-        const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.04), metalMat);
-        base.position.y = shaftLen * 0.92;
-        group.add(base);
-
-        const centerProng = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.45, 6), metalMat);
-        centerProng.position.y = shaftLen * 0.92 + 0.26;
-        group.add(centerProng);
-
-        const leftProng = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.38, 6), metalMat);
-        leftProng.position.set(-0.11, shaftLen * 0.92 + 0.22, 0);
-        leftProng.rotation.z = 0.12;
-        group.add(leftProng);
-
-        const rightProng = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.38, 6), metalMat);
-        rightProng.position.set(0.11, shaftLen * 0.92 + 0.22, 0);
-        rightProng.rotation.z = -0.12;
-        group.add(rightProng);
-      } else {
-        const spearHead = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.5, 4), metalMat);
-        spearHead.position.y = shaftLen * 0.92 + 0.25;
-        group.add(spearHead);
-
-        if (glow) {
-          const lanceLight = new THREE.PointLight(glow, 1.2, 3.5);
-          lanceLight.position.y = shaftLen * 0.92 + 0.25;
-          group.add(lanceLight);
-        }
-      }
-    } else if (type === 'axe') {
-      const haftLen = weapon.id === 'axe_colossal' ? 1.6 : 1.2;
-      const haft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, haftLen, 8), woodMat);
-      haft.position.y = haftLen * 0.35;
-      group.add(haft);
-
-      if (weapon.id === 'axe_colossal') {
-        [-1, 1].forEach(side => {
-          const blade = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.42, 0.04), metalMat);
-          blade.position.set(side * 0.22, haftLen * 0.72, 0);
-          blade.rotation.z = side * 0.15;
-          group.add(blade);
-        });
-
-        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8), brassMat);
-        socket.position.y = haftLen * 0.72;
-        group.add(socket);
-      } else if (weapon.id === 'axe_bearded') {
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.38, 0.035), metalMat);
-        blade.position.set(0.16, haftLen * 0.68, 0);
-        blade.rotation.z = -0.25;
-        group.add(blade);
-
-        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.24, 8), metalMat);
-        socket.position.y = haftLen * 0.72;
-        group.add(socket);
-      } else {
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.24, 0.03), metalMat);
-        blade.position.set(0.14, haftLen * 0.7, 0);
-        blade.rotation.z = -0.18;
-        group.add(blade);
-
-        const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.2, 8), brassMat);
-        socket.position.y = haftLen * 0.7;
-        group.add(socket);
-      }
-    }
-
-    return group;
-  }
-
-  equipWeapon(weaponId) {
-    this.activeWeaponId = weaponId;
-
-    while (this.weaponMount && this.weaponMount.children.length > 0) {
-      this.weaponMount.remove(this.weaponMount.children[0]);
-    }
-    while (this.sheathMount && this.sheathMount.children.length > 0) {
-      this.sheathMount.remove(this.sheathMount.children[0]);
-    }
-
-    if (!weaponId || weaponId === 'none') {
-      if (this.rodMount) this.rodMount.visible = true;
-      return;
-    }
-
-    const weaponData = (window.GAME_DATA.weapons && window.GAME_DATA.weapons.find(w => w.id === weaponId));
-    if (!weaponData) return;
-
-    const heldMesh = this.buildWeaponMesh(weaponData);
-    heldMesh.rotation.x = -Math.PI / 2.8;
-    this.weaponMount.add(heldMesh);
-
-    const sheathMesh = this.buildWeaponMesh(weaponData);
-    sheathMesh.rotation.x = Math.PI;
-    this.sheathMount.add(sheathMesh);
-
-    const isFishing = window.game && window.game.fishing && window.game.fishing.state !== 'idle';
-    if (isFishing) {
-      this.weaponMount.visible = false;
-      this.sheathMount.visible = true;
-      if (this.rodMount) this.rodMount.visible = true;
-    } else {
-      this.weaponMount.visible = true;
-      this.sheathMount.visible = false;
-      if (this.rodMount) this.rodMount.visible = false;
-    }
-  }
-
-  swingWeapon() {
-    if (this.isDead || this.isSwingingWeapon) return;
-    const isFishing = window.game && window.game.fishing && window.game.fishing.state !== 'idle';
-    if (isFishing) return;
-
-    this.isSwingingWeapon = true;
-    this.swingProgress = 0;
-
-    const weaponData = window.GAME_DATA.weapons ? window.GAME_DATA.weapons.find(w => w.id === this.activeWeaponId) : null;
-    const wType = weaponData ? weaponData.type : 'sword';
-
-    if (window.soundSystem && window.soundSystem.playWeaponSwing) {
-      window.soundSystem.playWeaponSwing(wType);
-    }
-
-    const reach = weaponData ? weaponData.reach : 2.5;
-
-    // Check tree chopping / harvesting
-    if (this.island) {
-      const tree = this.island.getNearestTree(this.position.x, this.position.z, reach + 1.2);
-      if (tree) {
-        tree.mesh.rotation.z += (Math.random() > 0.5 ? 0.22 : -0.22);
-        tree.lastShaken = Date.now();
-
-        if (wType === 'axe') {
-          if (window.soundSystem && window.soundSystem.playChop) window.soundSystem.playChop();
-          const chopMult = weaponData ? weaponData.chopPower : 1.2;
-          const timberGold = Math.floor(chopMult * 18) + Math.floor(Math.random() * 10);
-          if (window.game) {
-            window.game.gold += timberGold;
-            window.game.updateHUD();
-            window.game.showToast(`🪵 Chopped timber with ${weaponData.name}! +${timberGold} Gold`, 'success');
-          }
-        } else {
-          if (window.soundSystem && window.soundSystem.playChop) window.soundSystem.playChop();
-          if (window.game) {
-            window.game.showToast(`⚔️ Struck tree with ${weaponData ? weaponData.name : 'Weapon'}!`, 'info');
-          }
-        }
-      }
-
-      // Check beach crab harvesting
-      if (this.island.crabManager) {
-        const crab = this.island.crabManager.getNearestCrab(this.position.x, this.position.z, reach + 1.4);
-        if (crab) {
-          this.island.crabManager.catchCrab(crab.id);
-          if (window.game) {
-            window.game.showToast(`⚔️ Harvested Shore Crab with ${weaponData ? weaponData.name : 'Weapon'}!`, 'success');
-          }
-        }
-      }
-    }
-  }
 
   initFlashlight() {
     // High-Beam Angler LED Headlamp (Mounted on cap visor, illuminates up to 60 meters)
@@ -1087,11 +814,6 @@ class Player {
       // Angler Flashlight / Headlamp: [F]
       if (code === 'KeyF') {
         this.toggleFlashlight();
-      }
-
-      // Attack / Swing Weapon / Chop Trees: [R]
-      if (code === 'KeyR') {
-        this.swingWeapon();
       }
     });
 
@@ -1356,26 +1078,6 @@ class Player {
       });
     }
 
-    // Touch Attack / Weapon Swing Button (Mobile)
-    const btnAttack = document.getElementById('btn-touch-attack');
-    if (btnAttack) {
-      let attackHandled = false;
-      const handleTouchAttack = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.swingWeapon();
-      };
-      btnAttack.addEventListener('touchstart', (e) => {
-        attackHandled = true;
-        handleTouchAttack(e);
-      }, { passive: false });
-      btnAttack.addEventListener('click', (e) => {
-        if (attackHandled) { attackHandled = false; return; }
-        handleTouchAttack(e);
-      });
-    }
 
     // Click on interaction prompt banner
     const promptElem = document.getElementById('interaction-prompt');
@@ -1865,55 +1567,7 @@ class Player {
       const sandSink = Math.abs(Math.sin(this.walkCycle)) * 0.038;
       groundTargetY -= sandSink;
     }
-
-    // Weapons & Rod Hand Positioning vs Back Sheathing
-    if (this.activeWeaponId) {
-      if (isFishingActive) {
-        if (this.weaponMount) this.weaponMount.visible = false;
-        if (this.sheathMount) this.sheathMount.visible = true;
-        if (this.rodMount) this.rodMount.visible = true;
-      } else {
-        if (this.weaponMount) this.weaponMount.visible = true;
-        if (this.sheathMount) this.sheathMount.visible = false;
-        if (this.rodMount) this.rodMount.visible = false;
-      }
-    } else {
-      if (this.weaponMount) this.weaponMount.visible = false;
-      if (this.sheathMount) this.sheathMount.visible = false;
-      if (this.rodMount) this.rodMount.visible = true;
-    }
-
-    // Dynamic Athletic Weapon Slash Animation
-    if (this.isSwingingWeapon) {
-      this.swingProgress += delta * 4.4;
-      const p = this.swingProgress;
-      if (p < 0.28) {
-        // Wind-up: pull arm back and raise weapon high
-        const t = p / 0.28;
-        this.rightShoulder.rotation.x = -0.45 - t * 1.35;
-        this.rightShoulder.rotation.z = -t * 0.45;
-        this.rightElbow.rotation.x = -t * 0.9;
-        this.spine.rotation.y = t * 0.25;
-      } else if (p < 0.68) {
-        // Downward forward athletic slash
-        const t = (p - 0.28) / 0.40;
-        this.rightShoulder.rotation.x = -1.8 + t * 2.6;
-        this.rightShoulder.rotation.y = -t * 0.65;
-        this.rightShoulder.rotation.z = -0.45 + t * 0.85;
-        this.rightElbow.rotation.x = -0.9 + t * 0.7;
-        this.spine.rotation.y = 0.25 - t * 0.5;
-      } else if (p < 1.0) {
-        // Recovery smoothly back to stance
-        const t = (p - 0.68) / 0.32;
-        this.rightShoulder.rotation.x = 0.8 - t * 1.25;
-        this.rightShoulder.rotation.y = -0.65 * (1 - t);
-        this.rightShoulder.rotation.z = 0.4 * (1 - t);
-        this.spine.rotation.y = -0.25 * (1 - t);
-      } else {
-        this.isSwingingWeapon = false;
-        this.swingProgress = 0;
-      }
-    }
+    if (this.rodMount) this.rodMount.visible = true;
 
     if (this.jumpCooldown > 0) this.jumpCooldown -= delta;
 
