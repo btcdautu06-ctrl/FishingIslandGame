@@ -29,11 +29,15 @@ class Game {
     this.sessionTreesShaken = 0;
     this.deathParticlesActive = false;
     this.isUIMinimal = false;
+    this.isGameStarted = false;
 
     this.initThree();
     this.initSystems();
     this.initCatch3DViewer();
     this.setupUI();
+    this.setupMainMenu();
+    this.setupWardrobeUI();
+    this.setupChatUI();
     this.updateHUD();
 
     this.clock = new THREE.Clock();
@@ -144,6 +148,10 @@ class Game {
     const savedActiveRod = localStorage.getItem('fishing_island_active_rod') || 'rod_willow';
     this.player.equipRod(savedActiveRod);
 
+    // Multiplayer Networking System
+    if (window.MultiplayerManager) {
+      this.multiplayer = new window.MultiplayerManager(this);
+    }
   }
 
   // --- 3D INTERACTIVE FISH SHOWCASE VIEWER ---
@@ -535,7 +543,260 @@ class Game {
         this.respawnPlayer('campfire');
       });
     }
+
+    // Main Menu Button in HUD
+    const menuBtn = document.getElementById('main-menu-btn');
+    if (menuBtn) {
+      this.addFastTap(menuBtn, () => {
+        this.openMainMenu();
+      });
+    }
+
+    // Wardrobe / Skin Modal Button in HUD
+    const wardrobeBtn = document.getElementById('skin-wardrobe-btn');
+    if (wardrobeBtn) {
+      this.addFastTap(wardrobeBtn, () => {
+        this.openWardrobeModal();
+      });
+    }
+
+    // Multiplayer Chat Button in HUD
+    const chatBtn = document.getElementById('multiplayer-chat-btn');
+    if (chatBtn) {
+      this.addFastTap(chatBtn, () => {
+        this.openChatModal();
+      });
+    }
+
+    // Multiplayer HUD Pill Click
+    const mpPill = document.getElementById('hud-multiplayer-badge');
+    if (mpPill) {
+      this.addFastTap(mpPill, () => {
+        this.openMainMenu();
+      });
+    }
   }
+
+  // ==========================================
+  // MAIN MENU & 5 CHARACTER SKINS SYSTEM
+  // ==========================================
+
+  setupMainMenu() {
+    const menuOverlay = document.getElementById('main-menu-overlay');
+    if (!menuOverlay) return;
+
+    // Show menu on startup
+    menuOverlay.classList.remove('hidden');
+
+    const cardSingle = document.getElementById('card-single-player');
+    const cardMulti = document.getElementById('card-multiplayer');
+    const nameInput = document.getElementById('menu-player-name');
+
+    if (nameInput) {
+      nameInput.value = localStorage.getItem('fishing_island_player_name') || (this.multiplayer ? this.multiplayer.playerName : 'Angler');
+      nameInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          localStorage.setItem('fishing_island_player_name', val);
+          if (this.multiplayer) this.multiplayer.playerName = val;
+        }
+      });
+    }
+
+    // Mode Card Selection Highlighting
+    if (cardSingle && cardMulti) {
+      this.addFastTap(cardSingle, (e) => {
+        if (e.target && e.target.id === 'btn-menu-single') return;
+        cardSingle.classList.add('active-card');
+        cardMulti.classList.remove('active-card');
+      });
+      this.addFastTap(cardMulti, (e) => {
+        if (e.target && (e.target.id === 'btn-menu-multi' || e.target.id === 'menu-player-name')) return;
+        cardMulti.classList.add('active-card');
+        cardSingle.classList.remove('active-card');
+      });
+    }
+
+    // Single Player Start Button
+    const btnSingle = document.getElementById('btn-menu-single');
+    if (btnSingle) {
+      this.addFastTap(btnSingle, () => {
+        this.startSinglePlayer();
+      });
+    }
+
+    // Multiplayer Start Button
+    const btnMulti = document.getElementById('btn-menu-multi');
+    if (btnMulti) {
+      this.addFastTap(btnMulti, () => {
+        this.startMultiplayer();
+      });
+    }
+
+    // Render 5 skin selector cards in Main Menu
+    this.renderSkinCards('menu-skins-container', false);
+  }
+
+  renderSkinCards(containerId, isWardrobeModal = false) {
+    const container = document.getElementById(containerId);
+    if (!container || !window.GAME_DATA || !window.GAME_DATA.skins) return;
+
+    container.innerHTML = '';
+    const activeSkinId = (this.player && this.player.activeSkinId)
+      ? this.player.activeSkinId
+      : (localStorage.getItem('fishing_island_selected_skin') || 'skin_classic');
+
+    window.GAME_DATA.skins.forEach(skin => {
+      const isEquipped = (skin.id === activeSkinId);
+      const card = document.createElement('div');
+      card.className = `skin-card ${isEquipped ? 'active-skin' : ''}`;
+      card.id = `skin-card-${containerId}-${skin.id}`;
+
+      const dotsHtml = (skin.previewColors || []).map(col =>
+        `<span class="color-dot" style="background-color: ${col};"></span>`
+      ).join('');
+
+      card.innerHTML = `
+        <div class="skin-card-icon">${skin.icon}</div>
+        <div class="skin-card-title">${skin.name}</div>
+        <div class="skin-card-role">${skin.badge || skin.role}</div>
+        <div class="skin-color-swatches">${dotsHtml}</div>
+        <div class="skin-equipped-badge">${isEquipped ? '✓ EQUIPPED' : 'SELECT'}</div>
+      `;
+
+      this.addFastTap(card, () => {
+        if (this.player) {
+          this.player.applySkin(skin.id);
+        }
+        if (this.multiplayer) {
+          this.multiplayer.activeSkinId = skin.id;
+        }
+
+        // Re-render skin cards across both main menu and wardrobe
+        this.renderSkinCards('menu-skins-container', false);
+        this.renderSkinCards('ingame-skins-container', true);
+
+        if (window.soundSystem) window.soundSystem.playRodCast();
+        this.showToast(`✨ Equipped ${skin.name} outfit!`, 'success');
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  startSinglePlayer() {
+    this.isGameStarted = true;
+    const menuOverlay = document.getElementById('main-menu-overlay');
+    if (menuOverlay) menuOverlay.classList.add('hidden');
+
+    if (this.multiplayer) {
+      this.multiplayer.setMode('single');
+    }
+
+    if (window.soundSystem) window.soundSystem.resume();
+    this.showToast('🏕️ Starting Single Player Expedition! Peaceful solo fishing.', 'success');
+  }
+
+  startMultiplayer() {
+    this.isGameStarted = true;
+    const menuOverlay = document.getElementById('main-menu-overlay');
+    if (menuOverlay) menuOverlay.classList.add('hidden');
+
+    const nameInput = document.getElementById('menu-player-name');
+    let chosenName = (nameInput && nameInput.value.trim()) || 'Angler';
+    if (!chosenName) chosenName = 'Angler_' + Math.floor(Math.random() * 900 + 100);
+
+    localStorage.setItem('fishing_island_player_name', chosenName);
+
+    if (this.multiplayer) {
+      this.multiplayer.playerName = chosenName;
+      this.multiplayer.setMode('multiplayer');
+    }
+
+    if (window.soundSystem) window.soundSystem.resume();
+  }
+
+  openMainMenu() {
+    const menuOverlay = document.getElementById('main-menu-overlay');
+    if (menuOverlay) {
+      menuOverlay.classList.remove('hidden');
+      this.renderSkinCards('menu-skins-container', false);
+    }
+  }
+
+  setupWardrobeUI() {
+    const closeBtn = document.getElementById('skin-modal-close');
+    if (closeBtn) {
+      this.addFastTap(closeBtn, () => {
+        const modal = document.getElementById('skin-modal');
+        if (modal) modal.classList.add('hidden');
+      });
+    }
+    this.renderSkinCards('ingame-skins-container', true);
+  }
+
+  openWardrobeModal() {
+    const modal = document.getElementById('skin-modal');
+    if (modal) {
+      this.renderSkinCards('ingame-skins-container', true);
+      modal.classList.remove('hidden');
+    }
+  }
+
+  setupChatUI() {
+    const chatModal = document.getElementById('chat-modal');
+    const closeBtn = document.getElementById('chat-modal-close');
+    if (closeBtn) {
+      this.addFastTap(closeBtn, () => {
+        if (chatModal) chatModal.classList.add('hidden');
+      });
+    }
+
+    // Quick emote buttons
+    document.querySelectorAll('.btn-emote').forEach(btn => {
+      this.addFastTap(btn, () => {
+        const msg = btn.getAttribute('data-msg');
+        if (msg && this.multiplayer) {
+          this.multiplayer.broadcastChat(msg);
+        }
+        if (chatModal) chatModal.classList.add('hidden');
+      });
+    });
+
+    // Custom chat input
+    const sendBtn = document.getElementById('btn-send-custom-chat');
+    const input = document.getElementById('custom-chat-input');
+    const sendCustom = () => {
+      if (!input) return;
+      const text = input.value.trim();
+      if (text && this.multiplayer) {
+        this.multiplayer.broadcastChat(text);
+        input.value = '';
+      }
+      if (chatModal) chatModal.classList.add('hidden');
+    };
+
+    if (sendBtn) {
+      this.addFastTap(sendBtn, sendCustom);
+    }
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendCustom();
+        }
+      });
+    }
+  }
+
+  openChatModal() {
+    if (this.multiplayer && this.multiplayer.mode !== 'multiplayer') {
+      this.showToast('💬 Quick Chat is active in Multiplayer mode! You can switch modes via 🚪 Menu.', 'info');
+    }
+    const modal = document.getElementById('chat-modal');
+    if (modal) modal.classList.remove('hidden');
+  }
+
 
   detectPlatform() {
     const ua = navigator.userAgent || '';
@@ -1407,6 +1668,15 @@ class Game {
     this.sessionFishCaught = (this.sessionFishCaught || 0) + 1;
     if (this.tutorial) this.tutorial.onFishCaught(f);
 
+    if (this.multiplayer) {
+      this.multiplayer.broadcastCatch({
+        name: f.name,
+        sizeCm: data.sizeCm,
+        gold: data.gold,
+        rarity: f.rarity
+      });
+    }
+
     document.getElementById('catch-name').innerText = f.name;
     document.getElementById('catch-scientific').innerText = f.scientific;
     const rarityBadge = document.getElementById('catch-rarity-badge');
@@ -1511,6 +1781,11 @@ class Game {
     // Update realistic human player with dynamic rod bending & tension
     const isFishingActive = (this.fishing.state === 'reeling');
     this.player.update(delta, isFishingActive, this.fishing.state, this.fishing.reelState.tension);
+
+    // Update Multiplayer networking & remote player 3D avatars
+    if (this.multiplayer) {
+      this.multiplayer.update(delta);
+    }
 
     // Update fishing mechanics
     this.fishing.updateFishing(delta);

@@ -27,9 +27,21 @@
         <div class="hud-pill" title="Currently equipped fishing rod">
           🎣 <span id="hud-active-rod-name">Willow Twig Rod (T1)</span>
         </div>
+        <div id="hud-multiplayer-badge" class="hud-pill pill-multiplayer solo" title="Click to view Multiplayer status">
+          <span id="hud-multiplayer-count">🏕️ Solo Mode</span>
+        </div>
       </div>
 
       <div class="hud-group-right">
+        <button id="main-menu-btn" class="btn btn-gold" title="Return to Main Menu & Mode Selector">
+          🚪 Menu
+        </button>
+        <button id="skin-wardrobe-btn" class="btn btn-primary" title="Change Angler Outfit (5 Skins)">
+          👤 Skin
+        </button>
+        <button id="multiplayer-chat-btn" class="btn btn-outline" title="Quick Chat & Emotes for Multiplayer">
+          💬 Chat
+        </button>
         <button id="camera-view-btn" class="btn btn-primary" title="Toggle Camera View: 3rd Person / 1st Person / Front Face View [V]">
           👁️ View [V]
         </button>
@@ -432,6 +444,103 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       MAIN MENU: SINGLE PLAYER / MULTIPLAYER & 5 SKINS
+       ========================================== -->
+  <div id="main-menu-overlay" class="main-menu-overlay">
+    <div class="main-menu-card">
+      <div class="menu-brand">
+        <div class="menu-badge">🌊 3D Tropical Island Ocean Adventure</div>
+        <h1 class="menu-title">🏝️ ISLAND ANGLER</h1>
+        <p class="menu-desc">Explore the lush tropical archipelago, forage hidden items, reel in 25+ legendary fish, or join fellow anglers in a live shared ocean world!</p>
+      </div>
+
+      <!-- PLAY MODE SELECTOR CARDS -->
+      <div class="menu-section-label">CHOOSE YOUR GAMEPLAY MODE</div>
+      <div class="menu-modes-grid">
+        <!-- Single Player Card -->
+        <div class="menu-mode-card" id="card-single-player">
+          <div class="mode-header">
+            <span class="mode-icon">🏕️</span>
+            <div>
+              <h3>Single Player</h3>
+              <span class="mode-tag solo-tag">Relaxed Solo Expedition</span>
+            </div>
+          </div>
+          <p class="mode-text">Play by yourself at your own pace. Peaceful island exploration, tree foraging, and completing your personal fish compendium.</p>
+          <button id="btn-menu-single" class="btn-menu-action btn-menu-solo">
+            🎣 Play Single Player
+          </button>
+        </div>
+
+        <!-- Multiplayer Card -->
+        <div class="menu-mode-card active-card" id="card-multiplayer">
+          <div class="mode-header">
+            <span class="mode-icon">🌐</span>
+            <div>
+              <h3>Multiplayer World</h3>
+              <span class="mode-tag multi-tag">Live Shared Server</span>
+            </div>
+          </div>
+          <p class="mode-text">Join a shared island server with all other online players! See others fishing, compare rare catches in real time, and chat.</p>
+          <div class="multi-name-input-group">
+            <label for="menu-player-name">Your Angler Name:</label>
+            <input type="text" id="menu-player-name" maxlength="16" placeholder="Enter Angler Name..." value="Angler">
+          </div>
+          <button id="btn-menu-multi" class="btn-menu-action btn-menu-multi">
+            🚀 Join Multiplayer World
+          </button>
+        </div>
+      </div>
+
+      <!-- 5 CHARACTER SKINS SELECTOR -->
+      <div class="menu-section-label">
+        <span>CHOOSE YOUR OUTFIT (5 SKINS)</span>
+        <span class="skin-counter-tag">5 High-Definition 3D Styles</span>
+      </div>
+      <div class="menu-skins-grid" id="menu-skins-container">
+        <!-- Rendered dynamically from window.GAME_DATA.skins -->
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-GAME WARDROBE MODAL (Change Skin Anytime) -->
+  <div id="skin-modal" class="modal hidden">
+    <div class="modal-content skin-modal-content">
+      <div class="modal-header">
+        <h2>👤 Angler Wardrobe & Skins</h2>
+        <button class="modal-close" id="skin-modal-close">×</button>
+      </div>
+      <p class="skin-modal-subtitle">Equip any of the 5 stylized 3D skins. Your chosen skin is visible to you and everyone in Multiplayer!</p>
+      <div class="menu-skins-grid" id="ingame-skins-container">
+        <!-- Rendered dynamically from window.GAME_DATA.skins -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MULTIPLAYER QUICK CHAT / EMOTE MODAL -->
+  <div id="chat-modal" class="modal hidden">
+    <div class="modal-content chat-modal-content">
+      <div class="modal-header">
+        <h2>💬 Multiplayer Quick Chat & Emotes</h2>
+        <button class="modal-close" id="chat-modal-close">×</button>
+      </div>
+      <p class="chat-modal-subtitle">Send instant speech bubbles visible above your 3D avatar to all nearby players!</p>
+      <div class="chat-emotes-grid">
+        <button class="btn-emote" data-msg="👋 Hello fellow anglers!">👋 Hello everyone!</button>
+        <button class="btn-emote" data-msg="🎣 FISH ON! Huge bite!">🎣 Fish on! Big bite!</button>
+        <button class="btn-emote" data-msg="✨ Wow, what a legendary catch!">✨ Nice catch!</button>
+        <button class="btn-emote" data-msg="⛺ Meet me at Haven Campfire!">⛺ Meet at Campfire!</button>
+        <button class="btn-emote" data-msg="⛵ Ferrying to Coconut Atoll!">⛵ To Coconut Atoll!</button>
+        <button class="btn-emote" data-msg="🦀 Look at all these beach crabs!">🦀 Look at the crabs!</button>
+      </div>
+      <div class="custom-chat-row">
+        <input type="text" id="custom-chat-input" maxlength="45" placeholder="Type custom message...">
+        <button id="btn-send-custom-chat" class="btn btn-primary">Send</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SCREEN FADE OVERLAY FOR FERRY CHARTER TRAVEL -->
   <div id="screen-fade" class="screen-fade hidden"></div>
 
@@ -446,6 +555,12 @@
       document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
     }
   </script>
+  <script src="peerjs.min.js"></script>
+  <script>
+    if (typeof Peer === 'undefined') {
+      document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');
+    }
+  </script>
   <script src="js/data.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/sky.js"></script>
@@ -458,6 +573,7 @@
   <script src="js/island.js"></script>
   <script src="js/player.js"></script>
   <script src="js/fishing.js"></script>
+  <script src="js/multiplayer.js"></script>
   <script src="js/tutorial.js"></script>
   <script src="js/game.js"></script>
 

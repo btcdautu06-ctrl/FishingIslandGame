@@ -935,5 +935,149 @@ window.GAME_DATA = {
         { type: 'item', id: 'blossom_gem', name: 'Sakura Star Gem', value: 120, chance: 0.35, desc: 'Rare mystical jewel! Sell for 120g' }
       ]
     }
-  }
+  },
+
+  // 5 CHARACTER SKINS (Single Player & Multiplayer)
+  skins: [
+    {
+      id: 'skin_classic',
+      name: 'Classic Angler',
+      tagline: 'Maritime Coastal Fisherman',
+      icon: '🧢',
+      role: 'Fisherman',
+      desc: 'Traditional deep navy fleece jacket, olive-drab tactical tackle vest, rugged slate-grey cargo pants, and signature red maritime ball cap.',
+      badge: 'Traditional',
+      colors: {
+        jacket: 0x1a365d,
+        jacketTrim: 0x0f2444,
+        shirt: 0xe2e8f0,
+        vest: 0x2e5a36,
+        pocket: 0x23472a,
+        brass: 0xf1c40f,
+        pants: 0x2d3748,
+        kneePatch: 0x1a202c,
+        boots: 0x4a2e1b,
+        bootSole: 0x171923,
+        belt: 0x1a202c,
+        cap: 0xc53030,
+        capVisor: 0x9b2c2c,
+        capTrim: 0x1a202c,
+        hair: 0x2c1d11,
+        skin: 0xdeb887
+      },
+      previewColors: ['#1a365d', '#2e5a36', '#c53030', '#2d3748']
+    },
+    {
+      id: 'skin_pirate',
+      name: 'Crimson Buccaneer',
+      tagline: 'High-Seas Swashbuckler Captain',
+      icon: '🏴‍☠️',
+      role: 'Pirate Captain',
+      desc: 'Velvet crimson captain coat with gold braid epaulets, frilled sea-shirt, double leather belt, skull tricorn hat, and leather eye-patch.',
+      badge: 'Swashbuckler',
+      colors: {
+        jacket: 0x991b1b,
+        jacketTrim: 0xd97706,
+        shirt: 0xf8fafc,
+        vest: 0x7f1d1d,
+        pocket: 0xb45309,
+        brass: 0xfbbf24,
+        pants: 0x111827,
+        kneePatch: 0x1f2937,
+        boots: 0x1c1917,
+        bootSole: 0x0c0a09,
+        belt: 0x78350f,
+        cap: 0x18181b,
+        capVisor: 0xd97706,
+        capTrim: 0xfbbf24,
+        hair: 0x09090b,
+        skin: 0xd4a373
+      },
+      previewColors: ['#991b1b', '#d97706', '#18181b', '#fbbf24']
+    },
+    {
+      id: 'skin_diver',
+      name: 'Deep Sea Aquanaut',
+      tagline: 'High-Tech Deep Oceanic Diver',
+      icon: '🤿',
+      role: 'Deep Diver',
+      desc: 'Sealed electric-cyan & hazard-yellow neoprene diving suit with dual oxygen dive tanks, luminous cyan face visor, and heavy dive boots.',
+      badge: 'High-Tech',
+      colors: {
+        jacket: 0x0284c7,
+        jacketTrim: 0x0369a1,
+        shirt: 0x0ea5e9,
+        vest: 0xeab308,
+        pocket: 0xca8a04,
+        brass: 0x38bdf8,
+        pants: 0x0f172a,
+        kneePatch: 0x0284c7,
+        boots: 0x0369a1,
+        bootSole: 0xeab308,
+        belt: 0x1e293b,
+        cap: 0x0284c7,
+        capVisor: 0x38bdf8,
+        capTrim: 0x0284c7,
+        hair: 0x1e293b,
+        skin: 0xe2c499
+      },
+      previewColors: ['#0284c7', '#eab308', '#38bdf8', '#0f172a']
+    },
+    {
+      id: 'skin_tropical',
+      name: 'Tropical Islander',
+      tagline: 'Sunny Beach Vacation Explorer',
+      icon: '🏖️',
+      role: 'Island Explorer',
+      desc: 'Turquoise & coral hibiscus Hawaiian floral shirt, breezy khaki beach shorts, woven golden straw sun-brim hat, and wooden deck sandals.',
+      badge: 'Tropical',
+      colors: {
+        jacket: 0x0d9488,
+        jacketTrim: 0xf97316,
+        shirt: 0xfef08a,
+        vest: 0x14b8a6,
+        pocket: 0x0f766e,
+        brass: 0xf59e0b,
+        pants: 0xd6d3d1,
+        kneePatch: 0xe7e5e4,
+        boots: 0xb45309,
+        bootSole: 0x78350f,
+        belt: 0x78350f,
+        cap: 0xd97706,
+        capVisor: 0xf59e0b,
+        capTrim: 0x78350f,
+        hair: 0x78350f,
+        skin: 0xd4a373
+      },
+      previewColors: ['#0d9488', '#f97316', '#d6d3d1', '#f59e0b']
+    },
+    {
+      id: 'skin_ninja',
+      name: 'Shadow Shinobi',
+      tagline: 'Silent Midnight Fisher',
+      icon: '🥷',
+      role: 'Shadow Ninja',
+      desc: 'Midnight obsidian shinobi wraps, crimson fabric obi sash, polished metal forehead crest with flowing ribbons, and stealth dark face cowl.',
+      badge: 'Stealth',
+      colors: {
+        jacket: 0x0f172a,
+        jacketTrim: 0xdc2626,
+        shirt: 0x1e293b,
+        vest: 0x020617,
+        pocket: 0x991b1b,
+        brass: 0xe2e8f0,
+        pants: 0x0f172a,
+        kneePatch: 0x1e293b,
+        boots: 0x020617,
+        bootSole: 0x334155,
+        belt: 0xdc2626,
+        cap: 0x020617,
+        capVisor: 0x0f172a,
+        capTrim: 0xdc2626,
+        hair: 0x020617,
+        skin: 0xd5b895
+      },
+      previewColors: ['#0f172a', '#dc2626', '#020617', '#e2e8f0']
+    }
+  ]
 };

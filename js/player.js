@@ -63,7 +63,10 @@ class Player {
     // High-Beam Angler Headlamp / Flashlight
     this.flashlightActive = false;
 
+    this.activeSkinId = localStorage.getItem('fishing_island_selected_skin') || 'skin_classic';
+
     this.createRealisticHuman();
+    this.applySkin(this.activeSkinId);
     this.initFlashlight();
     this.setupInputs();
     this.equipRod(this.activeRodId);
@@ -174,6 +177,27 @@ class Player {
       color: 0x1a202c,
       roughness: 0.8
     });
+
+    this.skinMaterials = {
+      skin: skinMat,
+      skinShade: skinShadeMat,
+      lid: lidMat,
+      jacket: jacketMat,
+      jacketTrim: jacketTrimMat,
+      shirt: shirtMat,
+      vest: vestMat,
+      pocket: pocketMat,
+      brass: brassMat,
+      pants: pantsMat,
+      kneePatch: kneePatchMat,
+      boots: bootsMat,
+      bootSole: bootSoleMat,
+      belt: beltMat,
+      cap: capMat,
+      capVisor: capVisorMat,
+      capTrim: capTrimMat,
+      hair: hairMat
+    };
 
     // 1. PELVIS & UTILITY BELT
     this.pelvis = new THREE.Group();
@@ -383,20 +407,25 @@ class Player {
     hairNape.position.set(0, -0.02, -0.08);
     this.head.add(hairNape);
 
-    // Realistic Angler Cap positioned naturally on crown of head
+    // ==========================================
+    // 5 CHARACTER SKIN ACCESSORY MESHES & PROPS
+    // ==========================================
+    this.skinProps = {};
+
+    // 1. CLASSIC ANGLER PROPS (Red maritime cap & visor)
+    const classicGroup = new THREE.Group();
     const capCrown = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10, 0, Math.PI * 2, 0, Math.PI / 1.7), capMat);
     capCrown.position.set(0, 0.15, -0.01);
-    this.head.add(capCrown);
+    classicGroup.add(capCrown);
 
     const capButton = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 6), brassMat);
     capButton.position.set(0, 0.41, -0.01);
-    this.head.add(capButton);
+    classicGroup.add(capButton);
 
-    // Curved Brim / Visor (Mounted above eyebrows on forehead, tilted upward so eyes are 100% visible!)
     const visorGroup = new THREE.Group();
     visorGroup.position.set(0, 0.155, 0.18);
-    visorGroup.rotation.x = -0.16; // Tilted upward away from eyes
-    this.head.add(visorGroup);
+    visorGroup.rotation.x = -0.16;
+    classicGroup.add(visorGroup);
 
     const capVisor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.022, 0.22), capVisorMat);
     capVisor.position.z = 0.1;
@@ -405,6 +434,178 @@ class Player {
     const visorTrim = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.012, 0.02), capTrimMat);
     visorTrim.position.set(0, 0, 0.21);
     visorGroup.add(visorTrim);
+
+    this.head.add(classicGroup);
+    this.skinProps.classic = classicGroup;
+
+    // 2. CRIMSON BUCCANEER PIRATE PROPS (Tricorn hat with gold skull & leather eyepatch)
+    const pirateGroup = new THREE.Group();
+    const tricornMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.85 });
+    const goldTrimMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.3, metalness: 0.85 });
+
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.16, 12), tricornMat);
+    crown.position.set(0, 0.18, 0);
+    pirateGroup.add(crown);
+
+    // 3 folded brim wings: Left, Right, Back
+    const brimL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.46), tricornMat);
+    brimL.position.set(-0.24, 0.22, 0);
+    brimL.rotation.z = -0.32;
+    pirateGroup.add(brimL);
+
+    const brimR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.46), tricornMat);
+    brimR.position.set(0.24, 0.22, 0);
+    brimR.rotation.z = 0.32;
+    pirateGroup.add(brimR);
+
+    const brimBack = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.22, 0.08), tricornMat);
+    brimBack.position.set(0, 0.22, -0.22);
+    brimBack.rotation.x = -0.32;
+    pirateGroup.add(brimBack);
+
+    // Golden skull emblem on front fold
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), goldTrimMat);
+    skull.position.set(0, 0.20, 0.24);
+    pirateGroup.add(skull);
+
+    // Leather Eyepatch over left eye
+    const eyePatchMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6 });
+    const patch = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, 0.02), eyePatchMat);
+    patch.position.set(-0.088, 0.055, 0.235);
+    pirateGroup.add(patch);
+
+    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.245, 0.012, 6, 16), eyePatchMat);
+    strap.rotation.x = Math.PI / 2.2;
+    strap.rotation.z = 0.2;
+    strap.position.set(0, 0.06, 0.02);
+    pirateGroup.add(strap);
+
+    pirateGroup.visible = false;
+    this.head.add(pirateGroup);
+    this.skinProps.pirate = pirateGroup;
+
+    // 3. DEEP SEA AQUANAUT PROPS (Scuba helmet with luminous visor & twin back tanks)
+    const diverGroup = new THREE.Group();
+    const domeMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3, metalness: 0.6 });
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      roughness: 0.1,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.82
+    });
+
+    const helmetDome = new THREE.Mesh(new THREE.SphereGeometry(0.30, 16, 12, 0, Math.PI * 2, 0, Math.PI / 1.5), domeMat);
+    helmetDome.position.set(0, 0.10, 0);
+    diverGroup.add(helmetDome);
+
+    const visorBezel = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.024, 8, 16), goldTrimMat);
+    visorBezel.position.set(0, 0.06, 0.25);
+    diverGroup.add(visorBezel);
+
+    const visorGlass = new THREE.Mesh(new THREE.CircleGeometry(0.11, 14), glassMat);
+    visorGlass.position.set(0, 0.06, 0.26);
+    diverGroup.add(visorGlass);
+
+    [-0.28, 0.28].forEach(x => {
+      const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 8), goldTrimMat);
+      valve.rotation.z = Math.PI / 2;
+      valve.position.set(x, 0.05, 0);
+      diverGroup.add(valve);
+    });
+
+    // Dual scuba cylinders on back of chest
+    const diverChestGroup = new THREE.Group();
+    const tankMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.35, metalness: 0.4 });
+    const harnessMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+
+    [-0.13, 0.13].forEach(x => {
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.62, 10), tankMat);
+      tank.position.set(x, 0, -0.42);
+      const tankCap = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), tankMat);
+      tankCap.position.set(x, 0.31, -0.42);
+      const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.06, 6), brassMat);
+      valve.position.set(x, 0.40, -0.42);
+      diverChestGroup.add(tank);
+      diverChestGroup.add(tankCap);
+      diverChestGroup.add(valve);
+    });
+
+    const backplate = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.54, 0.05), harnessMat);
+    backplate.position.set(0, 0, -0.35);
+    diverChestGroup.add(backplate);
+    this.chest.add(diverChestGroup);
+
+    diverGroup.visible = false;
+    diverChestGroup.visible = false;
+    diverGroup.userData = { chestGroup: diverChestGroup };
+    this.head.add(diverGroup);
+    this.skinProps.diver = diverGroup;
+
+    // 4. TROPICAL ISLANDER PROPS (Wide straw sun hat & colorful floral lei)
+    const tropicalGroup = new THREE.Group();
+    const strawMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.95 });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75 });
+
+    const hatCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.16, 16), strawMat);
+    hatCrown.position.set(0, 0.18, 0);
+    tropicalGroup.add(hatCrown);
+
+    const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.02, 20), strawMat);
+    hatBrim.position.set(0, 0.10, 0);
+    tropicalGroup.add(hatBrim);
+
+    const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.275, 0.275, 0.04, 16), ribbonMat);
+    ribbon.position.set(0, 0.13, 0);
+    tropicalGroup.add(ribbon);
+
+    // Floral Lei Garland on chest
+    const leiMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.8 });
+    const leiTorus = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.035, 6, 16), leiMat);
+    leiTorus.rotation.x = Math.PI / 2.3;
+    leiTorus.position.set(0, 0.32, 0.12);
+    this.chest.add(leiTorus);
+
+    tropicalGroup.visible = false;
+    leiTorus.visible = false;
+    tropicalGroup.userData = { chestGroup: leiTorus };
+    this.head.add(tropicalGroup);
+    this.skinProps.tropical = tropicalGroup;
+
+    // 5. SHADOW SHINOBI NINJA PROPS (Midnight ninja cowl, silver crest plate, ribbons & face veil)
+    const ninjaGroup = new THREE.Group();
+    const cowlMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.9 });
+    const metalPlateMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.25, metalness: 0.9 });
+    const ninjaRibbonMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.8 });
+
+    const cowl = new THREE.Mesh(new THREE.SphereGeometry(0.27, 14, 10, 0, Math.PI * 2, 0, Math.PI / 1.6), cowlMat);
+    cowl.position.set(0, 0.12, 0);
+    ninjaGroup.add(cowl);
+
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.055, 0.02), metalPlateMat);
+    plate.position.set(0, 0.14, 0.245);
+    ninjaGroup.add(plate);
+
+    const ribbon1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.35, 0.01), ninjaRibbonMat);
+    ribbon1.position.set(-0.04, -0.06, -0.26);
+    ribbon1.rotation.x = 0.25;
+    ribbon1.rotation.z = -0.15;
+    ninjaGroup.add(ribbon1);
+
+    const ribbon2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.38, 0.01), ninjaRibbonMat);
+    ribbon2.position.set(0.04, -0.08, -0.26);
+    ribbon2.rotation.x = 0.28;
+    ribbon2.rotation.z = 0.15;
+    ninjaGroup.add(ribbon2);
+
+    // Lower face veil covering nose/mouth/chin
+    const veil = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.16, 10, 1, false, -Math.PI / 2, Math.PI), cowlMat);
+    veil.position.set(0, -0.02, 0.12);
+    ninjaGroup.add(veil);
+
+    ninjaGroup.visible = false;
+    this.head.add(ninjaGroup);
+    this.skinProps.ninja = ninjaGroup;
 
     // 4. ARTICULATED ARMS & ANATOMICAL HANDS
     const buildAnatomicalHand = (isRight) => {
@@ -620,6 +821,72 @@ class Player {
 
     this.scene.add(this.mesh);
   }
+
+  applySkin(skinId) {
+    if (!window.GAME_DATA || !window.GAME_DATA.skins) return;
+    const skinDef = window.GAME_DATA.skins.find(s => s.id === skinId) || window.GAME_DATA.skins[0];
+    if (!skinDef) return;
+
+    this.activeSkinId = skinDef.id;
+    try {
+      localStorage.setItem('fishing_island_selected_skin', skinDef.id);
+    } catch (e) {}
+
+    // Update material colors
+    if (this.skinMaterials) {
+      const c = skinDef.colors;
+      if (c.jacket !== undefined && this.skinMaterials.jacket) this.skinMaterials.jacket.color.setHex(c.jacket);
+      if (c.jacketTrim !== undefined && this.skinMaterials.jacketTrim) this.skinMaterials.jacketTrim.color.setHex(c.jacketTrim);
+      if (c.shirt !== undefined && this.skinMaterials.shirt) this.skinMaterials.shirt.color.setHex(c.shirt);
+      if (c.vest !== undefined && this.skinMaterials.vest) this.skinMaterials.vest.color.setHex(c.vest);
+      if (c.pocket !== undefined && this.skinMaterials.pocket) this.skinMaterials.pocket.color.setHex(c.pocket);
+      if (c.brass !== undefined && this.skinMaterials.brass) this.skinMaterials.brass.color.setHex(c.brass);
+      if (c.pants !== undefined && this.skinMaterials.pants) this.skinMaterials.pants.color.setHex(c.pants);
+      if (c.kneePatch !== undefined && this.skinMaterials.kneePatch) this.skinMaterials.kneePatch.color.setHex(c.kneePatch);
+      if (c.boots !== undefined && this.skinMaterials.boots) this.skinMaterials.boots.color.setHex(c.boots);
+      if (c.bootSole !== undefined && this.skinMaterials.bootSole) this.skinMaterials.bootSole.color.setHex(c.bootSole);
+      if (c.belt !== undefined && this.skinMaterials.belt) this.skinMaterials.belt.color.setHex(c.belt);
+      if (c.cap !== undefined && this.skinMaterials.cap) this.skinMaterials.cap.color.setHex(c.cap);
+      if (c.capVisor !== undefined && this.skinMaterials.capVisor) this.skinMaterials.capVisor.color.setHex(c.capVisor);
+      if (c.capTrim !== undefined && this.skinMaterials.capTrim) this.skinMaterials.capTrim.color.setHex(c.capTrim);
+      if (c.hair !== undefined && this.skinMaterials.hair) this.skinMaterials.hair.color.setHex(c.hair);
+      if (c.skin !== undefined && this.skinMaterials.skin) this.skinMaterials.skin.color.setHex(c.skin);
+    }
+
+    // Toggle skin accessory props
+    if (this.skinProps) {
+      const isClassic = (skinDef.id === 'skin_classic');
+      const isPirate = (skinDef.id === 'skin_pirate');
+      const isDiver = (skinDef.id === 'skin_diver');
+      const isTropical = (skinDef.id === 'skin_tropical');
+      const isNinja = (skinDef.id === 'skin_ninja');
+
+      if (this.skinProps.classic) this.skinProps.classic.visible = isClassic;
+      if (this.skinProps.pirate) this.skinProps.pirate.visible = isPirate;
+
+      if (this.skinProps.diver) {
+        this.skinProps.diver.visible = isDiver;
+        if (this.skinProps.diver.userData && this.skinProps.diver.userData.chestGroup) {
+          this.skinProps.diver.userData.chestGroup.visible = isDiver;
+        }
+      }
+
+      if (this.skinProps.tropical) {
+        this.skinProps.tropical.visible = isTropical;
+        if (this.skinProps.tropical.userData && this.skinProps.tropical.userData.chestGroup) {
+          this.skinProps.tropical.userData.chestGroup.visible = isTropical;
+        }
+      }
+
+      if (this.skinProps.ninja) this.skinProps.ninja.visible = isNinja;
+    }
+
+    // Notify Multiplayer manager if online
+    if (window.game && window.game.multiplayer) {
+      window.game.multiplayer.broadcastLocalState();
+    }
+  }
+
   equipRod(rodId) {
     this.activeRodId = rodId;
     const rodData = window.GAME_DATA.rods.find(r => r.id === rodId) || window.GAME_DATA.rods[0];
